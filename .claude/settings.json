@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "sandbox": {
+    "enabled": true,
+    "allowUnsandboxedCommands": false,
+    "failIfUnavailable": true,
+    "excludedCommands": [
+      "git push *"
+    ],
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.config/gh",
+        "~/.git-credentials",
+        "~/.netrc"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com"
+      ]
+    }
+  },
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.git-credentials)",
+      "Read(~/.netrc)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push +*)",
+      "Bash(git push * +*)",
+      "Bash(git push * --delete *)",
+      "Bash(git commit --amend*)",
+      "Bash(git commit * --amend*)",
+      "Bash(git rebase *)",
+      "Bash(git reset --hard*)",
+      "Bash(git filter-branch *)",
+      "Bash(git filter-repo *)",
+      "Bash(git branch -d *)",
+      "Bash(git branch -D *)",
+      "Bash(git branch --delete *)",
+      "Bash(gh pr merge*)"
+    ],
+    "ask": [
+      "Edit(/.claude/**)",
+      "Edit(/.github/**)",
+      "Edit(/SECURITY.md)",
+      "Bash(git push *)",
+      "Bash(gh *)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  }
+}
