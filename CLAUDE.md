@@ -2,7 +2,7 @@
 
 Read this first, every session.
 
-**Project:** strum-book. Tools for building songbooks for ukulele groups and bands from
+**Project:** strumbook. Tools for building songbooks for ukulele groups and bands from
 collections of ChordPro songs.
 **Owner:** sam-tmts. The owner approves every gate below; you never skip one.
 

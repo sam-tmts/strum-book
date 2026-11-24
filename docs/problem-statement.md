@@ -1,6 +1,6 @@
 # Problem statement and direction
 
-What strum-book is for, the direction agreed so far, and what we've learnt. Later CRs
+What strumbook is for, the direction agreed so far, and what we've learnt. Later CRs
 turn parts of it into acceptance criteria.
 
 ## The problem
@@ -23,7 +23,7 @@ pages, read on tablets held in portrait.
   themselves. Each looks different, and none can be re-rendered.
 
 PDF is still the common currency: one file that the group's organiser publishes and
-everyone can open. So strum-book must produce good PDFs; other views are optional
+everyone can open. So strumbook must produce good PDFs; other views are optional
 extras.
 
 ## Direction
@@ -50,16 +50,16 @@ tablet style, are not parked.)
 
 ## Ground rules
 
-- strum-book is open source and public.
+- strumbook is open source and public.
 - Each group usually keeps its own song collection in a private repository. Nothing
   from a private collection (song lists, survey data, notes about a group) goes into this
   repository.
-- The public [strum-songs](https://github.com/sam-tmts/strum-songs) repository holds
-  only public-domain songs, as test data.
+- Tests and examples in this repository use only public-domain songs, kept as small
+  fixtures here.
 
 ## Song collections
 
-Every collection repository uses the same small layout, so strum-book can treat them
+Every collection repository uses the same small layout, so strumbook can treat them
 alike:
 
 ```text
@@ -135,10 +135,11 @@ Tried with ChordPro 6.101 in November 2026.
 - **Quirk**: give `--config` once for each preset; the comma-separated form didn't work.
 - **Installing on macOS**: the app isn't signed. Record how to install it safely
   (official download, checksum if published) when ChordPro becomes a dependency.
-- **Test data**: [pathawks/Christmas-Songs](https://github.com/pathawks/Christmas-Songs),
-  28 carols in ChordPro, released under CC0. CC0 covers the files, not the songs, so
-  check each song's copyright before copying it into strum-songs. They show real-world
-  quirks: written for guitar, a capo in 9 songs, and some non-standard tags.
+- **A larger test set**: [pathawks/Christmas-Songs](https://github.com/pathawks/Christmas-Songs),
+  28 carols in ChordPro, released under CC0. Use it for end-to-end checks, pinned to a
+  commit. CC0 covers the files, not the songs, and a few carols may still be under
+  copyright, so don't copy songs from it into this repository without checking. It shows
+  real-world quirks: written for guitar, a capo in 9 songs, and some non-standard tags.
 
 The command from the test. The last setting is the untested fix for sharps and flats
 mentioned above:
