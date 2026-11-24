@@ -2,7 +2,8 @@
 
 Read this first, every session.
 
-**Project:** <name>. <One-line description.>
+**Project:** strumbook. Tools for building songbooks for ukulele groups and bands from
+collections of ChordPro songs.
 **Owner:** sam-tmts. The owner approves every gate below; you never skip one.
 
 ## Principles
@@ -98,4 +99,8 @@ a PR with passing CI, and is merged by the owner. If in doubt, it isn't trivial.
 
 ## Project notes
 
-<Anything specific to this project an agent must know.>
+- Read [`docs/problem-statement.md`](docs/problem-statement.md) for the problem, the
+  agreed direction and what we've learnt so far.
+- Nothing from a private song collection (song lists, survey data, notes about a group)
+  belongs in this public repository; see the ground rules in the problem statement. Use
+  public-domain songs for examples and tests.

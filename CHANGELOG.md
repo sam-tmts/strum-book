@@ -9,6 +9,11 @@ heading and is tagged `vX.Y.Z`.
 
 ## [Unreleased]
 
+### Added
+
+- Problem statement and project direction in `docs/problem-statement.md`, linked from
+  `CLAUDE.md` (CR-0002).
+
 ## [0.2.0] - 2026-11-22
 
 ### Added
