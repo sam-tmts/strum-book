@@ -1,20 +1,64 @@
-"""The initial command-line interface; songbook generation is not implemented."""
+"""The command-line interface: `strumbook build`."""
 
 import argparse
+import sys
 from collections.abc import Sequence
 from importlib.metadata import version
+from pathlib import Path
+
+from strumbook.book import BuildError, read_book
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Show help or the installed version; reject unsupported commands."""
     parser = argparse.ArgumentParser(
         prog="strumbook",
         description="Build songbooks for ukulele groups from ChordPro collections.",
-        epilog="Development scaffold only: songbook generation is not implemented yet.",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version('strumbook')}"
     )
-    parser.parse_args(argv)
-    parser.print_help()
+    commands = parser.add_subparsers(dest="command", title="commands")
+    build = commands.add_parser(
+        "build",
+        help="build a tablet songbook PDF from a folder of ChordPro songs",
+        description="Build a tablet songbook PDF from the .cho files in a folder.",
+    )
+    build.add_argument("songs_dir", type=Path, metavar="SONGS_DIR")
+    build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
+    build.add_argument("--title", help="the book's title (default: the folder's name)")
+    build.add_argument(
+        "--mid-word-chords",
+        choices=["inline", "above"],
+        default="inline",
+        help="draw a chord inside a word inline (default), or above the word so "
+        "search finds the whole word",
+    )
+    build.add_argument(
+        "--pdf-tags",
+        choices=["on", "off"],
+        default="on",
+        help="tag the PDF for screen readers (default on); off makes it smaller",
+    )
+    args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        return 0
+
+    # Imported here so that --help works without the renderer.
+    from strumbook.render import render
+
+    try:
+        book = read_book(args.songs_dir, args.title)
+        for warning in book.warnings:
+            print(f"warning: {warning}", file=sys.stderr)
+        render(
+            book,
+            args.output,
+            mid_word=args.mid_word_chords,
+            pdf_tags=args.pdf_tags == "on",
+        )
+    except BuildError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"Wrote {args.output}: {len(book.songs)} songs")
     return 0
