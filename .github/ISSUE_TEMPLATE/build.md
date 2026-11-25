@@ -5,14 +5,33 @@ title: ""
 labels: build
 ---
 
-## Goal
+## Why
 
-What should work afterwards, and for whom?
+The problem or opportunity, and who benefits. A few sentences.
+
+## Scope
+
+**In:** what this delivers.
+
+**Out:** what it deliberately leaves alone.
+
+## Design notes
+
+The approach in outline, decisions already made, and any ADR this creates or relies
+on. Leave out if obvious.
 
 ## Acceptance criteria
 
-- [ ] Something observable, and how it's checked (test, or Sam trying a sample PDF).
+Each one checkable, including what must *not* happen, with how it's verified (a test,
+CI, or Sam trying a sample PDF).
 
-## Out of scope
+- [ ] … *Verified by:* …
+- [ ] … *Verified by:* …
 
-What this issue doesn't cover, and any decisions already made.
+## Constraints and risks
+
+Dependencies, platforms, privacy, anything that could go wrong. "None" is fine.
+
+## Semver impact
+
+major / minor / patch / none, and why in a line.

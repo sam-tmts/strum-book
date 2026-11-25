@@ -13,7 +13,9 @@ say what's missing before reviewing.
 
 Check, in order: does it do what the issue asks; is it correct, including failure
 cases; would the tests catch it breaking; is it as simple as it could be; are the docs
-right; does anything private (songs, song lists, books) leak into the public repo.
+right, including the architecture and threat model if the change affects them; is
+the stated semver impact right; do any secrets or private songs, song lists or books
+leak into the public repo.
 
 For a spike, check whether the evidence supports the conclusion and what was missed.
 A negative result can be good work.

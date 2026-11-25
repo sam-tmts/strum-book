@@ -1,16 +1,7 @@
 # Developer guide
 
-## Layout
-
-| Path | What |
-|------|------|
-| `src/strumbook/cli.py` | Command-line entry point (`strumbook`, or `python -m strumbook`) |
-| `tests/` | pytest tests; `conftest.py` blocks network access during tests |
-| `docs/problem-statement.md` | The problem, the direction and what we've learnt |
-| `docs/adr/` | Lasting decisions |
-
-There's no rendering or import code yet. Add modules when an issue needs them, not
-before.
+The tools, commands and conventions for working on StrumBook. For how the code is
+structured, see [architecture](architecture.md).
 
 ## Tools
 
@@ -31,8 +22,8 @@ dependencies, edit `pyproject.toml`, run `uv lock`, and commit both files.
 ## Tests
 
 Name tests for the behaviour they check (`test_unknown_arguments_fail`). Use temporary
-directories and public-domain or synthetic songs. Tests can't reach the network; a
-test that needs a song collection uses a small fixture in `tests/`.
+directories and public-domain or synthetic songs. `tests/conftest.py` blocks network
+access; a test that needs songs uses a small fixture in `tests/`.
 
 ## Working with song collections
 
@@ -41,7 +32,19 @@ the Claude Code session (**+ > Add folder** in the desktop app), and write gener
 books outside this repository. Treat collections as read-only unless the task says
 otherwise.
 
-## Decisions
+## Templates
 
-Write an ADR for a decision later work must respect: what was decided, why, and the
-alternatives considered. Keep it short and review it in the same PR.
+| For | Where |
+|-----|-------|
+| Build, Bug and Spike issues | `.github/ISSUE_TEMPLATE/` (GitHub only reads them there) |
+| Pull requests | `.github/PULL_REQUEST_TEMPLATE.md` |
+| ADRs | [`templates/adr.md`](templates/adr.md), copied to `adr/NNNN-short-title.md` |
+| Release notes | [`templates/release-notes.md`](templates/release-notes.md) |
+
+## Releases
+
+Versions follow [semver](https://semver.org) and live only in `pyproject.toml`. To
+release: choose the version from the semver impact of the PRs merged since the last
+release; set it in `pyproject.toml` through a PR; once merged, tag `vX.Y.Z` on `main`
+and publish a GitHub release with notes from the template. The GitHub releases are the
+changelog.

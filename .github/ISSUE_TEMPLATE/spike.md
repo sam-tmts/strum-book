@@ -7,7 +7,7 @@ labels: spike
 
 ## Question
 
-What do we need to find out?
+What do we need to find out, and what decision does the answer feed?
 
 ## Limits
 
@@ -17,4 +17,9 @@ How far to go (options to try, time to spend) and when to stop.
 
 What would answer the question? A negative or inconclusive result is fine.
 
-<!-- Findings go in this issue. Experimental code is thrown away unless asked for. -->
+## Findings
+
+*Filled in at the end:* what we learnt, the evidence, what's still uncertain, and a
+recommended next step (usually a Build issue).
+
+<!-- Experimental code is thrown away unless Sam asks for some of it in a PR. -->
