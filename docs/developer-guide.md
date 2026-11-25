@@ -23,7 +23,21 @@ dependencies, edit `pyproject.toml`, run `uv lock`, and commit both files.
 
 Name tests for the behaviour they check (`test_unknown_arguments_fail`). Use temporary
 directories and public-domain or synthetic songs. `tests/conftest.py` blocks network
-access; a test that needs songs uses a small fixture in `tests/`.
+access; a test that needs songs uses the carols in `tests/fixtures/carols/` or writes
+synthetic ones. Tests read built PDFs with pypdf (text, links, bookmarks), through
+`tests/pdf_helpers.py`.
+
+## Sample books
+
+When a change affects what a book looks like, build a sample into `output/`, which git
+ignores, and name it in the PR:
+
+```sh
+uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
+```
+
+The layout lives in `src/strumbook/layout/book.typ`; the chord shapes in
+`src/strumbook/chords.json` (frets per string, G C E A).
 
 ## Working with song collections
 
