@@ -1,27 +1,26 @@
-# Operating system files
+# Local Python tools and generated output
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local scratch/review material, not durable project knowledge
+.work/
+.claude/settings.local.json
 .DS_Store
-Thumbs.db
-desktop.ini
 
-# Editor state (shared editor settings, such as .vscode/, are kept in git)
-.idea/
-*.swp
-
-# Secrets and credentials: these must never be committed (see ADR-0003)
+# Accidental local secrets and collection material: ignore is not access control
 .env
 .env.*
-!.env.example
 *.pem
 *.key
-*.p12
-*.pfx
-
-# Claude Code personal overrides (shared settings live in .claude/settings.json)
-.claude/settings.local.json
-
-# Logs and scratch files
-*.log
-*.tmp
-tmp/
-
-# Language-specific entries are added by each project's first CR
+/private/
+/collections/
+/output/

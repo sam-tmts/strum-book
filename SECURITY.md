@@ -2,17 +2,12 @@
 
 ## Reporting a problem
 
-Please report security problems privately using GitHub's **Report a vulnerability**
-button on the repository's **Security** tab, not in a public issue. Reports are read by
-the owner, sam-tmts, and acknowledged as soon as practical.
+Report ordinary bugs as GitHub issues. For anything sensitive, such as a vulnerability,
+leaked credentials or private songs, use GitHub's private vulnerability reporting on
+this repository instead of a public issue.
 
-Only the latest release is supported.
+## How we handle risk
 
-## How this project stays secure
-
-- Real secrets never enter the repository:
-  [ADR-0003](docs/adr/ADR-0003-secrets-outside-repository.md).
-- Coding agents work in Claude Code's sandbox, in a dedicated developer account:
-  [ADR-0004](docs/adr/ADR-0004-sandboxed-development.md).
-- The risks, how each is handled, and the known limitations:
-  [threat model](docs/threat-model.md).
+StrumBook is a local command-line tool. It handles no credentials and makes no network
+requests. The [threat model](docs/threat-model.md) lists what we protect, the threats
+we expect, and what we accept.

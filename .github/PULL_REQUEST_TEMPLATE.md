@@ -1,17 +1,8 @@
-<!-- Trivial change (see CLAUDE.md)? Fill in only Change request, Summary, Semver
-impact and Notes, and delete the other sections. -->
-
-## Change request
-
-Implements: CR-NNNN (`docs/cr/CR-NNNN-....md`)
+Closes #
 
 ## Summary
 
 What changed, in a few lines.
-
-## Implementation plan
-
-The plan the owner approved in plan mode, and any way the build differed from it.
 
 ## Semver impact
 
@@ -22,31 +13,22 @@ The plan the owner approved in plan mode, and any way the build differed from it
 
 ## Checklist
 
-- [ ] Every acceptance criterion in the CR is met (list below, with evidence)
-- [ ] Tests were written before the implementation
-- [ ] No existing test was changed or deleted, or the change was approved (explain below)
-- [ ] `CHANGELOG.md` updated under `Unreleased`
-- [ ] No new dependencies, or each one is in `docs/dependencies.md` and was approved
+- [ ] Tests written before the implementation; `make check` passes
+- [ ] No existing test weakened, or the reason is given below
+- [ ] New dependencies approved by Sam and pinned, or none added
 - [ ] Architecture, threat model and ADRs updated, or not affected
-- [ ] No secrets, credentials or personal data in the diff
-- [ ] No protected paths changed (`.claude/`, `.github/workflows/`,
-      `.github/scripts/`, `SECURITY.md`), or the CR covers them and they are called out below
-- [ ] Reviewer subagent run; findings listed below
+- [ ] No secrets, credentials or private songs in the diff
 
 ## Acceptance criteria evidence
 
-| AC | Evidence (test name, CI link, or manual check) |
-|----|------------------------------------------------|
-| AC1 | |
+| Criterion | Evidence (test name, CI, sample PDF) |
+|-----------|--------------------------------------|
+| | |
 
-## Reviewer findings
+## Review
 
-Each finding and how it was resolved (fixed, or why not).
+What the reviewer found and what was done about each finding.
 
-## How to verify
+## To try
 
-Steps the owner can follow to check this locally.
-
-## Notes
-
-Anything unexpected, deferred, or worth a follow-up CR.
+What Sam should look at before merging, such as a sample PDF, and anything not checked.
