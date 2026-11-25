@@ -11,9 +11,11 @@ def test_network_connection_is_rejected() -> None:
 
 
 def test_direct_socket_connection_is_rejected() -> None:
-    with socket.socket() as connection:
-        with pytest.raises(AssertionError, match="Network access is disabled"):
-            connection.connect(("127.0.0.1", 9))
+    with (
+        socket.socket() as connection,
+        pytest.raises(AssertionError, match="Network access is disabled"),
+    ):
+        connection.connect(("127.0.0.1", 9))
 
 
 def test_dns_lookup_is_rejected() -> None:
