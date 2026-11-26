@@ -17,8 +17,10 @@ uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 ```
 
 `strumbook build SONGS_DIR -o BOOK.pdf` reads every `.cho` file in the folder and
-writes a PDF for a tablet: an index, the songs sorted by title with chord diagrams down
-the side, and a chord reference page. Every page has a strip of links along the bottom
+writes a PDF for a tablet: an index, the songs sorted by title (or `{sorttitle}`) with
+chord diagrams down the side, and a chord reference page. Choruses are marked, and a
+small line under each title gives the song's subtitle and its words, music and
+translation credits. Every page has a strip of links along the bottom
 to the index, each letter and the reference page. Options:
 
 - `--title TEXT`: the book's title (default: the folder's name).
@@ -31,9 +33,14 @@ to the index, each letter and the reference page. Options:
 To avoid page turns, a song drops its diagram column if the diagrams would push it onto
 a second page, or if it has more than 8 diagrams and needs more than one page anyway.
 The chord names in the lyrics always stay. StrumBook warns about chords it has no
-diagram for and ChordPro directives it skips.
+diagram for and ChordPro directives it doesn't know. Chords are played as written:
+`{capo}` is ignored.
 
-It needs no network access. It installs on macOS, Linux and Windows (x64), but not yet
+To see a full book, `make christmas` builds all 28 carols from
+[Christmas Songs](https://github.com/pathawks/Christmas-Songs) into
+`output/christmas-carols.pdf`. It needs network access to clone them.
+
+StrumBook itself needs no network access. It installs on macOS, Linux and Windows (x64), but not yet
 on Windows on ARM: its Typst renderer has no package for it.
 
 ## How work happens

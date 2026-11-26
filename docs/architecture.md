@@ -30,10 +30,12 @@ flowchart LR
     renderer -- Typst --> pdf[/PDF/]
 ```
 
-- **Reader** (`chordpro.py`) reads the ChordPro subset we use: title, artist, verses,
-  choruses and inline chords. Standard metadata we don't show (key, capo …) is ignored;
-  other directives are skipped with a warning.
-- **Book model** (`book.py`) sorts the songs by title, ignoring case, and groups each
+- **Reader** (`chordpro.py`) reads the ChordPro subset we use: title, sort title,
+  artist, subtitle, credits, verses, choruses and inline chords. Credits come from
+  `{words}`, `{music}` and `{translation}` and the variants real collections use
+  (`{text}`, `{translated}`, `{Latin Text}` …). Metadata we don't show (key, capo …)
+  and known oddities are ignored; other directives are skipped with a warning.
+- **Book model** (`book.py`) sorts the songs by sort title, ignoring case, and groups each
   song's chords into diagrams: chords with the same fingering share one. Shapes come
   from our own GCEA table (`chords.json`, read by `chords.py`). It also holds the two
   rules for dropping a song's diagram column (`show_diagrams`). It knows nothing about
