@@ -122,15 +122,47 @@ def test_latin_text_directive_is_not_sung_as_a_lyric(
 def test_sorttitle_decides_order_and_index_letter(tmp_path: Path) -> None:
     folder = make_songs(
         tmp_path,
-        z="{title:The Zebra Song}\n{sorttitle:Zebra Song, The}\n[G]La\n",
-        a="{title:Apple Tree}\n[G]La\n",
-        m="{title:Mango}\n[G]La\n",
+        a="{title:The Apple Song}\n{sorttitle:Apple Song, The}\n[G]La\n",
+        b="{title:Banana}\n[G]La\n",
+        u="{title:Umbrella}\n[G]La\n",
     )
     book = read_book(folder)
     assert [s.song.title for s in book.songs] == [
-        "Apple Tree", "Mango", "The Zebra Song",
+        "The Apple Song", "Banana", "Umbrella",
     ]  # fmt: skip
-    assert [s.letter for s in book.songs] == ["A", "M", "Z"]
+    assert [s.letter for s in book.songs] == ["A", "B", "U"]
+
+
+def test_repeated_credits_are_joined(tmp_path: Path) -> None:
+    path = tmp_path / "s.cho"
+    path.write_text(
+        "{title:Two Hands}\n{text:A. One}\n{Latin Text:B. Two}\n"
+        "{composer:C. Three}\n{composer:D. Four}\n[G]La\n",
+        "utf-8",
+    )
+    assert read_song(path).credit_line == (
+        "Words: A. One, B. Two · Music: C. Three, D. Four"
+    )
+
+
+def test_a_braced_note_without_a_colon_stays_in_the_lyrics(tmp_path: Path) -> None:
+    path = tmp_path / "s.cho"
+    path.write_text("{title:Note}\n[G]La la\n{Repeat chorus}\n", "utf-8")
+    song = read_song(path)
+    lyrics = [s.text for b in song.blocks for line in b.lines for s in line]
+    assert "{Repeat chorus}" in lyrics
+    assert not song.skipped
+
+
+def test_the_summary_counts_songs_and_warnings(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    clean = make_songs(tmp_path, a="{title:Clean}\n[G]La\n")
+    assert main(["build", str(clean), "-o", str(tmp_path / "a.pdf")]) == 0
+    assert "1 song, 0 warnings" in capsys.readouterr().out
+    (clean / "b.cho").write_text("{title:Odd}\n{frobnicate: x}\n[G]La\n", "utf-8")
+    assert main(["build", str(clean), "-o", str(tmp_path / "b.pdf")]) == 0
+    assert "2 songs, 1 warning\n" in capsys.readouterr().out
 
 
 def test_known_directives_are_ignored_quietly_and_unknown_ones_warn_once(

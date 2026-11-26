@@ -5,7 +5,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-# A name may contain spaces before a colon: "{Latin Text: J.F. Wade}".
+# A name may contain spaces if a colon follows: "{Latin Text: J.F. Wade}". Without
+# one, "{Repeat chorus}" is a note to players and stays in the lyrics.
 _DIRECTIVE = re.compile(r"\{\s*([\w-]+(?:[ \t]+[\w-]+)*)\s*(?::\s*(.*?))?\s*\}")
 _CHORD = re.compile(r"\[([^\]]*)\]")
 _START_CHORUS = {"start_of_chorus", "soc"}
@@ -51,9 +52,9 @@ class Song:
     artist: str
     blocks: tuple[Block, ...]
     skipped: frozenset[str]  # unknown directives, without braces
-    sort_title: str = ""  # the title, unless {sorttitle} gives another
-    subtitle: str = ""
-    credits: tuple[tuple[str, str], ...] = ()  # (label, name), in _LABELS order
+    sort_title: str  # the title, unless {sorttitle} gives another
+    subtitle: str
+    credits: tuple[tuple[str, str], ...]  # (label, names), in _LABELS order
 
     @property
     def credit_line(self) -> str:
@@ -86,6 +87,7 @@ def read_song(path: Path) -> Song:
         raise SongError(f"can't read {path.name}: {e.strerror}") from None
 
     meta: dict[str, str] = {}
+    credits: dict[str, list[str]] = {}
     skipped: set[str] = set()
     blocks: list[Block] = []
     lines: list[tuple[Segment, ...]] = []
@@ -100,7 +102,10 @@ def read_song(path: Path) -> Song:
         line = raw.rstrip()
         if line.startswith("#"):
             continue
-        if match := _DIRECTIVE.fullmatch(line.strip()):
+        match = _DIRECTIVE.fullmatch(line.strip())
+        if match and " " in match.group(1) and match.group(2) is None:
+            match = None  # "{Repeat chorus}"
+        if match:
             name = " ".join(match.group(1).lower().split())
             value = (match.group(2) or "").strip()
             if name in _START_CHORUS | _END_CHORUS | _VERSE:
@@ -111,7 +116,7 @@ def read_song(path: Path) -> Song:
                 meta.setdefault(name, value)
             elif name in _CREDITS:
                 if value:
-                    meta.setdefault(_CREDITS[name], value)
+                    credits.setdefault(_CREDITS[name], []).append(value)
             elif name not in _IGNORED:
                 skipped.add(name)
         elif line.strip():
@@ -128,5 +133,7 @@ def read_song(path: Path) -> Song:
         skipped=frozenset(skipped),
         sort_title=meta.get("sorttitle") or title,
         subtitle=meta.get("subtitle", ""),
-        credits=tuple((label, meta[label]) for label in _LABELS if label in meta),
+        credits=tuple(
+            (label, ", ".join(credits[label])) for label in _LABELS if label in credits
+        ),
     )

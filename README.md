@@ -40,8 +40,8 @@ To see a full book, `make christmas` builds all 28 carols from
 [Christmas Songs](https://github.com/pathawks/Christmas-Songs) into
 `output/christmas-carols.pdf`. It needs network access to clone them.
 
-StrumBook itself needs no network access. It installs on macOS, Linux and Windows (x64), but not yet
-on Windows on ARM: its Typst renderer has no package for it.
+StrumBook itself needs no network access. It installs on macOS, Linux and Windows
+(x64), but not yet on Windows on ARM: its Typst renderer has no package for it.
 
 ## How work happens
 
