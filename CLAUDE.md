@@ -45,9 +45,9 @@ real complexity, name the simpler alternative and let Sam choose.
 4. Commit, then give `reviewer` the issue, the full diff (`git diff origin/main...HEAD`)
    and the real `make check` output. Fix what matters; report anything unresolved.
 5. Push with `git push -u origin HEAD:refs/heads/build/N-slug` and open a PR from the
-   template. CI builds a sample book from the fixture carols on every run; if the
-   change affects what a book looks like, say in the PR what to look at in it. The
-   link is in the `checks` job's summary.
+   template. CI builds a sample book from the fixture carols on every run that passes
+   its checks. If the change affects what a book looks like, name the sample
+   (`strumbook-carols-prN-<sha>.pdf`) in the PR and say what to look at in it.
 
 Never merge, release or push to `main`. Never claim a test, review or result that
 didn't happen.

@@ -63,6 +63,7 @@ jobs:
           archive: false # the iPad opens the PDF directly, no unzipping
           retention-days: 30
           if-no-files-found: error
+          overwrite: true # so re-running the job doesn't fail on the same name
       - name: Link the sample book in the job summary
         env:
           FILE: ${{ steps.sample.outputs.file }}
