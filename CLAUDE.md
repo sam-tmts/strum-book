@@ -68,7 +68,8 @@ delete the branch.
   only public-domain songs. Never put private songs, song lists or books made from
   them in commits, issues or PRs.
 - **Dependencies:** each new package needs Sam's OK first: name, version, source and
-  why. Pin it in `pyproject.toml` and `uv.lock`.
+  why. Pin it in `pyproject.toml` and `uv.lock`, and thank it in the README's Thanks
+  table, as for anything else we build on (fonts, fixture songs).
 - **Guardrails:** don't change `.claude/`, `.github/workflows/` or `SECURITY.md`
   unless the issue covers it. Don't work around the sandbox; if a command needs a new
   host or path, say so.
