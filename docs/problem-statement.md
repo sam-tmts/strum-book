@@ -34,7 +34,15 @@ extras.
    text, and a person checks each song. Imports arrive as pull requests, so the check
    is the review.
 3. **Books are built from one or more collections**, either every song or a set list in
-   running order.
+   running order. People make three kinds of book:
+   - **a group's songbook:** hundreds of songs, everything in one or more collections,
+     A to Z;
+   - **a band's extended songbook:** tens to a couple of hundred songs picked from
+     several collections, still A to Z;
+   - **a gig set list:** 10 to 20 songs from several collections, in a fixed running
+     order, possibly in separate sets, with much less clutter.
+
+   A [book file](book-files.md) describes each one.
 4. **First goal: two books from the same songs**, one for standard ukulele and one for
    baritone, differing only in their chord diagrams.
 5. **Every book has** clean searchable text, a tappable contents page with an A-to-Z
