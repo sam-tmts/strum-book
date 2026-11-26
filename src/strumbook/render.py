@@ -129,7 +129,6 @@ def _song_data(book_song: BookSong) -> dict:
         "title": song.title,
         "artist": song.artist,
         "credit": song.credit_line,
-        "letter": book_song.letter,
         "key": book_song.letter,  # the strip cell this song lights up
         "blocks": blocks,
         "diagrams": [_diagram_data(d) for d in book_song.diagrams],

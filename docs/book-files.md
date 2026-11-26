@@ -147,9 +147,9 @@ then the song's file name without `.cho`, spaces and all.
 | `exclude` | Songs to leave out, even if `include` or `pick` brings them in. A song that no longer exists only gets a warning. |
 | `order` | `"a-z"` (the default) sorts the songs by title. `"listed"` keeps them in the order of `pick`, followed by any songs `include` adds. |
 
-The index always lists the songs A to Z. The strip of links along the bottom of each
-page jumps to letters, so only an A-to-Z book has one; in a `listed` book, the index
-and the song titles still link to each other.
+The index always lists the songs A to Z. In a songbook, the strip of links along the
+bottom of each page jumps to letters, so only an A-to-Z songbook has one; in a `listed`
+one, the index and the song titles still link to each other (when the index is on).
 
 If two sources have a song with the same file name, the book has both; the index shows
 each one's artist.
@@ -185,15 +185,16 @@ possible. It takes its songs from `[[songs.set]]` tables, one per set, in order:
 
 `spares`, under `[songs]`, lists songs you might add or play as encores; they come
 after the last set, under "Spares and encores". A song can be in only one set or in
-the spares. A gig with no sets can use `pick` instead, as one unnamed set. A set list
-doesn't use `include`, `exclude` or `order = "a-z"`.
+the spares. A gig with no sets can use `pick` instead, as one unnamed set. `include`,
+`exclude` and `order = "a-z"` are errors in a set list.
 
 The book has a title page, a running-order page listing each set and its songs (tap a
 song to go to it), then each set's songs. When `set-breaks` is on, each set and the
-spares start with a break page showing the name, running time and notes. Each song's
+spares start with a break page showing the name, running time and notes (an unnamed
+`pick` set has none). Each song's
 title and page number link back to the running order. With `navigation` on, the strip
 along the bottom links the running order, each set, the spares and (if it's on)
-Reference; a set list with no named sets has no strip.
+Reference. A set list with only a `pick` list and no spares has no strip.
 
 ## Which setting wins
 
@@ -212,8 +213,10 @@ Settings come in three layers, each overriding the one before:
 StrumBook stops with an error naming the problem, and writes no PDF, if the file isn't
 valid TOML or has no title, a song in `pick`, a set or the spares doesn't exist (file
 names must match exactly, capitals included), a song is in a set list twice, a set has
-no name or no songs, a source is unknown, has no songs or can't be downloaded, or a
-setting has a value StrumBook doesn't accept. Keys it doesn't know only get a warning,
+no name or no songs, a source is unknown, has no songs or can't be downloaded, a
+setting has a value StrumBook doesn't accept, or a `[songs]` key belongs to the other
+style (`include`, `exclude` or `order = "a-z"` in a set list; sets or `spares` in a
+songbook; sets and `pick` together). `--style setlist` needs a book file. Keys it doesn't know only get a warning,
 so a book file written for a newer StrumBook still builds. Unknown chords and directives in a song are warnings, as
 when building from a folder.
 

@@ -36,8 +36,9 @@ Options, which override a book file's own settings:
 - `--title TEXT`: the book's title (default: the book file's title, or the folder's
   name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
-- `--style songbook|setlist`: the book's style (default songbook). A set list leaves
-  out the index, link strip, reference page and Credits unless you turn them on.
+- `--style songbook|setlist`: the book's style (default songbook). A set list needs a
+  book file, and leaves out the index, link strip, reference page and Credits unless
+  you turn them on.
 - `--title-page on|off`: include the title page (default on).
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).

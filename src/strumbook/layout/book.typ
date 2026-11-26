@@ -129,7 +129,14 @@
 #let strip(current) = {
   let w = (page-w - 2 * side) / data.strip.len()
   let cell(body, active) = box(width: w, height: strip-h, {
-    place(center + horizon, box(width: w - 2mm, align(center, body)))
+    // A long set name wraps; past two lines it's cut off, not spilt out of the strip.
+    let inner = box(width: w - 2mm, align(center, body))
+    place(center + horizon, context {
+      let room = strip-h - 3mm
+      if measure(inner).height <= room { inner } else {
+        box(height: room, clip: true, align(top, inner))
+      }
+    })
     if active { place(bottom + center, rect(width: 75%, height: 2pt, fill: red)) }
   })
   grid(

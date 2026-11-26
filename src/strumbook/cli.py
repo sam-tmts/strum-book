@@ -51,7 +51,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ("navigation", "the strip of links along the bottom", "on; setlist off"),
         ("reference", "the chord reference page", "on; setlist off"),
         ("credits", "Credits", "on; setlist off"),
-        ("set-breaks", "a page before each set", "setlist: on for several sets"),
+        ("set-breaks", "a page before each set", "setlist: on for 2+ sets or spares"),
     ]:
         build.add_argument(
             f"--{option}", choices=_ON_OFF, help=f"include {what} (default {default})"

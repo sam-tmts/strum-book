@@ -131,7 +131,10 @@ def _songbook(songs: dict, folders: dict[str, Path], warnings: list[str]) -> lis
     """The songs `include`, `pick` and `exclude` choose."""
     for key in ("set", "spares"):
         if key in songs:
-            raise BuildError(f'[songs] {key} is for set lists: add style = "setlist"')
+            raise BuildError(
+                f"[songs] {key} is for set lists, but this book is building as a "
+                'songbook: use style = "setlist"'
+            )
     order = _text(songs, "order", "[songs]") or "a-z"
     if order not in ("a-z", "listed"):
         raise BuildError('[songs] order must be "a-z" or "listed"')
@@ -172,11 +175,13 @@ def _setlist(
     for key in ("include", "exclude"):
         if key in songs:
             raise BuildError(
-                f"[songs] {key} isn't for set lists: choose songs with [[songs.set]]"
+                f"[songs] {key} isn't for set lists: choose songs with [[songs.set]] "
+                "or pick"
             )
     if _text(songs, "order", "[songs]") not in ("", "listed"):
         raise BuildError(
-            '[songs] order = "a-z" isn\'t for set lists: they keep their running order'
+            '[songs] order in a set list can only be "listed" (or left out): '
+            'set lists keep their running order, so not "a-z"'
         )
     sets = songs.get("set", [])
     if not isinstance(sets, list) or not all(isinstance(s, dict) for s in sets):
@@ -199,7 +204,7 @@ def _setlist(
     if picked := _list(songs.get("pick", []), "pick"):
         groups.append((Section("", len(picked)), picked, "pick"))
     if spares := _list(songs.get("spares", []), "spares"):
-        groups.append((Section(SPARES, len(spares), spares=True), spares, "spares"))
+        groups.append((Section(SPARES, len(spares)), spares, "spares"))
     chosen: list[Path] = []
     for _, refs, key in groups:
         for ref in refs:
@@ -279,7 +284,7 @@ def _text(table: dict, key: str, where: str) -> str:
 
 def _list(value: object, key: str) -> list:
     if not isinstance(value, list):
-        raise BuildError(f'[songs] {key} must be a list: ["…"]')
+        raise BuildError(f'[songs] {key} must be a list, in square brackets: ["…"]')
     return value
 
 

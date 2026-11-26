@@ -40,13 +40,13 @@ class BookSong:
 
 @dataclass(frozen=True)
 class Section:
-    """A set in a set list, or its spares: the next `count` songs in book order."""
+    """A set in a set list, or its spares: the next `count` songs in book order,
+    which is why a book with sections is never sorted."""
 
     name: str  # "" for the unnamed set a pick list makes
     count: int
     running_time: str = ""
     notes: str = ""
-    spares: bool = False
 
 
 @dataclass(frozen=True)
@@ -138,7 +138,7 @@ def make_book(
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
         found.append(f"skipped unknown directive {{{name}}} in {where}")
 
-    if a_to_z:
+    if a_to_z and not sections:
         songs.sort(key=lambda s: (*sort_key(s[0]), s[1]))
     return Book(
         title=title,
@@ -156,7 +156,7 @@ def make_book(
             for root in REFERENCE_ROOTS
         ),
         warnings=tuple(found),
-        a_to_z=a_to_z,
+        a_to_z=a_to_z and not sections,
         subtitle=subtitle,
         notes=notes,
         sources=sources,
