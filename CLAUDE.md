@@ -56,10 +56,11 @@ didn't happen.
 
 ## Spikes
 
-A `spike/N-slug` answers a question within the limits the issue sets. Record findings,
-evidence and a recommendation in the issue. Experimental code stays off `main` unless
-Sam asks for some of it in a PR. Once Sam accepts the findings, close the issue and
-delete the branch.
+A `spike/N-slug` answers a question within the limits the issue sets. The issue's
+questions and evidence are the test plan; throwaway scripts in `.work/` may gather it.
+Record findings, evidence and a recommendation in the issue. Experimental code stays
+off `main` unless Sam asks for some of it in a PR. Once Sam accepts the findings, close
+the issue and delete the branch.
 
 ## Rules
 
