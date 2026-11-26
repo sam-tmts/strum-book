@@ -73,7 +73,10 @@
   let body = b.lines.map(lyric-line).join()
   let breakable = b.lines.len() > max-unbroken-lines
   block(breakable: breakable, above: block-gap, below: block-gap, if b.chorus {
-    block(stroke: (left: 2pt + rule), inset: (left: 10pt, y: 2pt), body)
+    block(stroke: (left: 2pt + rule), inset: (left: 10pt, y: 2pt), {
+      block(below: 0.5em, text(10pt, style: "italic", fill: muted)[Chorus])
+      body
+    })
   } else { body })
 }
 
@@ -196,6 +199,7 @@
   )[
     #heading(level: 1, bookmarked: not measuring, song.title) #start
     #text(10pt, fill: muted, song.artist)
+    #if song.credit != "" { block(above: 0.4em, text(9pt, fill: muted, song.credit)) }
     #for b in song.blocks { verse(b) }
     #metadata(none) #end
     #report(song.id, variant, start)

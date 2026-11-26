@@ -90,6 +90,7 @@ def _song_data(book_song: BookSong) -> dict:
         "id": book_song.id,
         "title": song.title,
         "artist": song.artist,
+        "credit": song.credit_line,
         "letter": book_song.letter,
         "blocks": blocks,
         "diagrams": [_diagram_data(d) for d in book_song.diagrams],
