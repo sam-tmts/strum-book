@@ -48,4 +48,24 @@ holds only the tool and public-domain test songs.
 
 ## Licence
 
-[MIT](LICENSE). The licence covers the software, not any songs it is used with.
+[MIT](LICENSE). The licence covers the software, not any songs it is used with. The
+bundled Atkinson Hyperlegible font has its own licence, the
+[SIL Open Font License](src/strumbook/layout/fonts/OFL.txt).
+
+## Thanks
+
+StrumBook builds on the great work of these projects:
+
+| Project | What it does for StrumBook |
+|---------|----------------------------|
+| [Typst](https://typst.app) | Lays out every page of the book and writes the PDF: searchable text, links and bookmarks. |
+| [typst-py](https://github.com/messense/typst-py) | Bundles the Typst compiler as a Python package, so installing StrumBook needs nothing else. |
+| [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) | The Braille Institute's typeface, designed to be easy to tell letters apart. It keeps lyrics clear on a tablet at arm's length. |
+| [ChordPro](https://www.chordpro.org) | The song format: lyrics with chords inline, which StrumBook reads. |
+| [Christmas Songs](https://github.com/pathawks/Christmas-Songs) | Public-domain carols in ChordPro, used as test songs. |
+| [uv](https://docs.astral.sh/uv/) | Sets up the Python environment and pins every dependency. |
+| [pytest](https://pytest.org) | Runs the tests. |
+| [pypdf](https://github.com/py-pdf/pypdf) | Lets the tests read the books they build: text, links and bookmarks. |
+| [Ruff](https://docs.astral.sh/ruff/) | Checks and formats the code. |
+
+The exact versions are pinned in [`uv.lock`](uv.lock).
