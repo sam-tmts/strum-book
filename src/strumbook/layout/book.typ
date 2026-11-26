@@ -304,7 +304,7 @@
   #if data.notes.len() > 0 {
     v(10mm)
     set par(spacing: 1em)
-    for p in data.notes { par(text(12pt, p)) }
+    for lines in data.notes { par(text(12pt, lines.join(linebreak()))) }
   }
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]

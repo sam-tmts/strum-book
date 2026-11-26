@@ -32,7 +32,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     build.add_argument("book", type=Path, metavar="BOOK.book.toml|SONGS_DIR")
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
-    build.add_argument("--title", help="the book's title (default: the folder's name)")
+    build.add_argument(
+        "--title",
+        help="the book's title (default: the book file's title, or the folder's name)",
+    )
     build.add_argument(
         "--edition", help="the edition line on the title page (default: today's date)"
     )

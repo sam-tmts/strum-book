@@ -69,7 +69,7 @@ def read_book_file(path: Path) -> BookFile:
     sources = _table(data, "sources")
     if not sources:
         raise BuildError("the book file has no [sources.<name>] tables")
-    folders, links = {}, []
+    folders, links, pins = {}, [], {}
     for name, source in sources.items():
         if not _NAME.fullmatch(name) or not isinstance(source, dict):
             raise BuildError(
@@ -81,6 +81,10 @@ def read_book_file(path: Path) -> BookFile:
         warnings += more
         if link:
             links.append(link)
+        # Sources sharing an address share one checkout, so they must agree on its pin.
+        url, pin = source.get("git"), source.get("pin")
+        if url and pins.setdefault(url, pin) != pin:
+            raise BuildError(f"git address {url} has different pins: use one pin")
 
     songs = _table(data, "songs")
     warnings += _unknown(songs, _SONGS_KEYS, "[songs]")
@@ -94,13 +98,19 @@ def read_book_file(path: Path) -> BookFile:
     for name in include:
         if name not in folders:
             raise BuildError(f"[songs] include names unknown source {name!r}")
-    picked = [
-        _song(ref, folders, "pick") for ref in _list(songs.get("pick", []), "pick")
-    ]
-    excluded = {
-        _song(ref, folders, "exclude")
-        for ref in _list(songs.get("exclude", []), "exclude")
-    }
+    picked = []
+    for ref in _list(songs.get("pick", []), "pick"):
+        song, missing = _song(ref, folders, "pick")
+        if missing:
+            raise BuildError(missing)
+        picked.append(song)
+    excluded = set()
+    for ref in _list(songs.get("exclude", []), "exclude"):
+        # A warning, not an error: a collection that tracks the latest may drop it.
+        song, missing = _song(ref, folders, "exclude")
+        if missing:
+            warnings.append(missing)
+        excluded.add(song)
 
     included = [p for name in include for p in song_files(folders[name])]
     chosen = list(dict.fromkeys(p for p in picked + included if p not in excluded))
@@ -115,7 +125,7 @@ def read_book_file(path: Path) -> BookFile:
             a_to_z=order == "a-z",
             subtitle=_text(book, "subtitle", "[book]"),
             notes=_text(book, "notes", "[book]"),
-            sources=tuple(links),
+            sources=tuple(dict.fromkeys(links)),
             warnings=tuple(warnings),
         ),
         style=style,
@@ -140,28 +150,34 @@ def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
         root, more = fetch(name, url, pin or None)
         warnings += more
     else:
-        root = (base / Path(local).expanduser()).resolve()
+        root = base / Path(local).expanduser()
         if not root.is_dir():
-            raise BuildError(f"{where} path: no such folder: {root}")
+            raise BuildError(f"{where} path: no such folder: {root.resolve()}")
+    root = root.resolve()
     sub = _text(source, "folder", where)
-    folder = (
-        root / sub if sub else root / "songs" if (root / "songs").is_dir() else root
-    )
+    folder = (root / sub).resolve() if sub else root / "songs"
+    if not sub and not folder.is_dir():
+        folder = root
+    if not folder.is_relative_to(root):
+        raise BuildError(f"{where} folder {sub!r} is outside the source")
     if not song_files(folder):
         raise BuildError(f"source {name!r} has no songs: no .cho files in {folder}")
     return folder, link or url, warnings
 
 
-def _song(ref: object, folders: dict[str, Path], key: str) -> Path:
+def _song(ref: object, folders: dict[str, Path], key: str) -> tuple[Path | None, str]:
+    """The song file `ref` names, matched exactly, or None and why not."""
     if not isinstance(ref, str) or ":" not in ref:
         raise BuildError(f'[songs] {key}: {ref!r} isn\'t "source:file name"')
     name, stem = ref.split(":", 1)
     if name not in folders:
         raise BuildError(f"[songs] {key}: {ref!r} names unknown source {name!r}")
-    path = folders[name] / f"{stem}.cho"
-    if not path.is_file():
-        raise BuildError(f"[songs] {key}: no song {stem!r} in source {name!r}")
-    return path
+    songs = {p.stem: p for p in song_files(folders[name])}
+    if stem in songs:
+        return songs[stem], ""
+    near = [s for s in songs if s.casefold() == stem.casefold()]
+    hint = f" (did you mean {near[0]!r}?)" if near else ""
+    return None, f"[songs] {key}: no song {stem!r} in source {name!r}{hint}"
 
 
 def _table(data: dict, key: str) -> dict:

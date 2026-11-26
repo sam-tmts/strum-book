@@ -135,9 +135,10 @@ def _song_data(book_song: BookSong) -> dict:
     }
 
 
-def _paragraphs(text: str) -> list[str]:
-    """Plain text as paragraphs: blank lines separate them, other line breaks don't."""
-    return [" ".join(p.split()) for p in re.split(r"\n\s*\n", text) if p.strip()]
+def _paragraphs(text: str) -> list[list[str]]:
+    """Plain text as paragraphs of lines: blank lines separate paragraphs."""
+    paragraphs = re.split(r"\n\s*\n", text.strip())
+    return [[line.strip() for line in p.splitlines()] for p in paragraphs if p.strip()]
 
 
 def _letters(book: Book) -> list[dict]:
