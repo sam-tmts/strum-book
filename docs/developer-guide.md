@@ -29,8 +29,14 @@ synthetic ones. Tests read built PDFs with pypdf (text, links, bookmarks), throu
 
 ## Sample books
 
-When a change affects what a book looks like, build a sample into `output/`, which git
-ignores, and name it in the PR:
+CI builds a sample book from the fixture carols on every run and uploads it as a PDF,
+kept for 30 days. Its title and file name give the PR number and commit, so samples
+can be told apart on a tablet. To find it, open the PR's `checks` job; the link is in
+its summary. Downloading needs a GitHub sign-in.
+
+CI builds only `tests/fixtures/`. Anyone signed in to GitHub can download the sample,
+so never point it at private songs. To build one locally, into `output/` (which git
+ignores):
 
 ```sh
 uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
