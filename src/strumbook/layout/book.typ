@@ -153,7 +153,9 @@
   let number = text(15pt, weight: "bold", fill: red, context counter(page).display())
   if back != none and not measuring { number = link(back, number) }
   place(top + right, dx: -side, dy: 13mm, number)
-  if not measuring { place(bottom + left, dx: side, dy: -5mm, strip(current)) }
+  if data.navigation and not measuring {
+    place(bottom + left, dx: side, dy: -5mm, strip(current))
+  }
 }
 
 // Reports a page span to render.py in measure mode.
@@ -245,7 +247,7 @@
   #v(4mm)
   #columns(if measuring { 1 } else { data.index_columns }, gutter: 8mm, {
     let previous = none
-    for song in data.songs {
+    for song in data.index {
       if song.letter != previous { group-head(song.letter) }
       previous = song.letter
       let target = label("song-" + song.id)
@@ -297,7 +299,13 @@
   #heading(level: 1)[Title]
   #kicker[SONGBOOK] \
   #text(40pt, weight: "bold", data.title) \
+  #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
   #text(14pt, fill: muted, data.edition)
+  #if data.notes.len() > 0 {
+    v(10mm)
+    set par(spacing: 1em)
+    for p in data.notes { par(text(12pt, p)) }
+  }
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]
 
@@ -334,7 +342,7 @@
     ("Atkinson Hyperlegible", "set the words, in the Braille Institute's typeface made to be easy to read",
       "https://www.brailleinstitute.org/freefont/"),
   )
-  if data.source != none { made.push(("Songs", "came from this collection", data.source)) }
+  for url in data.sources { made.push(("Songs", "came from this collection", url)) }
   let address(url) = url.trim("https://", at: start).trim("http://", at: start).trim("/", at: end)
   section-page[
     #if credited.len() == 0 { opening }

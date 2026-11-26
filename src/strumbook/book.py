@@ -41,9 +41,13 @@ class BookSong:
 @dataclass(frozen=True)
 class Book:
     title: str
-    songs: tuple[BookSong, ...]
+    songs: tuple[BookSong, ...]  # in book order
     reference: tuple[tuple[str, tuple[Diagram, ...]], ...]  # root, its diagrams
     warnings: tuple[str, ...]
+    a_to_z: bool = True  # False when the songs are in a listed running order
+    subtitle: str = ""
+    notes: str = ""  # plain text; paragraphs separated by blank lines
+    sources: tuple[str, ...] = ()  # web addresses for Credits
 
 
 def group_diagrams(chord_names: list[str]) -> list[Diagram]:
@@ -74,17 +78,35 @@ def index_letter(title: str) -> str:
     return first if "A" <= first <= "Z" else "#"
 
 
+def song_files(folder: Path) -> list[Path]:
+    """The .cho files in `folder`, by name. Hidden files are skipped, such as the
+    "._Song.cho" files macOS leaves on USB sticks."""
+    return sorted(p for p in folder.glob("*.cho") if not p.name.startswith("."))
+
+
 def read_book(folder: Path, title: str | None = None) -> Book:
     """Read every .cho file in `folder`. The title defaults to the folder's name."""
     if not folder.is_dir():
         raise BuildError(f"no such folder: {folder}")
-    # Skip hidden files, such as the "._Song.cho" files macOS leaves on USB sticks.
-    paths = sorted(p for p in folder.glob("*.cho") if not p.name.startswith("."))
+    paths = song_files(folder)
     if not paths:
         raise BuildError(f"no .cho files in {folder}")
+    return make_book(folder.resolve().name if title is None else title, paths)
 
+
+def make_book(
+    title: str,
+    paths: list[Path],
+    *,
+    a_to_z: bool = True,
+    subtitle: str = "",
+    notes: str = "",
+    sources: tuple[str, ...] = (),
+    warnings: tuple[str, ...] = (),
+) -> Book:
+    """A book of the songs in `paths`, sorted by title, or in the order given."""
     songs: list[tuple[Song, Path]] = []
-    warnings: list[str] = []
+    found: list[str] = list(warnings)
     skipped: dict[str, list[str]] = {}
     for path in paths:
         try:
@@ -94,20 +116,19 @@ def read_book(folder: Path, title: str | None = None) -> Book:
         songs.append((song, path))
         for name in song.skipped:
             skipped.setdefault(name, []).append(song.title)
-        warnings += [
+        found += [
             f"{song.title}: no diagram for {name}"
             for name in song.chords
             if shape(name) is None
         ]
     for name, titles in sorted(skipped.items()):
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
-        warnings.append(f"skipped unknown directive {{{name}}} in {where}")
+        found.append(f"skipped unknown directive {{{name}}} in {where}")
 
-    songs.sort(
-        key=lambda s: (index_letter(s[0].sort_title), s[0].sort_title.casefold(), s[1])
-    )
+    if a_to_z:
+        songs.sort(key=lambda s: (*sort_key(s[0]), s[1]))
     return Book(
-        title=folder.resolve().name if title is None else title,
+        title=title,
         songs=tuple(
             BookSong(
                 song,
@@ -121,5 +142,14 @@ def read_book(folder: Path, title: str | None = None) -> Book:
             (root, tuple(group_diagrams([root, root + "m", root + "7"])))
             for root in REFERENCE_ROOTS
         ),
-        warnings=tuple(warnings),
+        warnings=tuple(found),
+        a_to_z=a_to_z,
+        subtitle=subtitle,
+        notes=notes,
+        sources=sources,
     )
+
+
+def sort_key(song: Song) -> tuple[str, str]:
+    """A to Z by sort title, ignoring case, with "#" first."""
+    return index_letter(song.sort_title), song.sort_title.casefold()
