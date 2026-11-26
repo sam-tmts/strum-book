@@ -20,8 +20,7 @@ SONGS_DIR -o BOOK.pdf` still works as a shortcut for "every song in one folder".
 - **A gig set list:** 10 to 20 songs from several collections in a fixed running order,
   perhaps in separate sets, with much less clutter.
 
-The `songbook` style makes the first two. A `setlist` style for gigs is planned; until
-then, a short list of songs in `listed` order (the second example below) does the job.
+The `songbook` style makes the first two; the `setlist` style makes the third.
 
 ## Examples
 
@@ -66,6 +65,43 @@ pick = [
 order = "listed"
 ```
 
+A gig in two sets, with spares at the back:
+
+```toml
+[book]
+title = "Carols on the green"
+style = "setlist"
+edition = "2026-12-20"
+
+[sources.carols]
+path = "../Christmas-Songs"
+
+[[songs.set]]
+name = "Set 1"
+running-time = "25 min"
+notes = """
+Start 6:30. Away In A Manger twice if the children join in.
+"""
+songs = [
+  "carols:Away In A Manger",
+]
+
+[[songs.set]]
+name = "Set 2"
+running-time = "20 min"
+notes = """
+Collection buckets out before this set.
+"""
+songs = [
+  "carols:O Come O Come Emmanuel",
+]
+
+[songs]
+spares = [                       # at the back, under "Spares and encores"
+  "carols:O Little Town Of Bethlehem",
+]
+```
+
 ## The format
 
 A book file is [TOML](https://toml.io) and its name ends in `.book.toml`. Text goes in
@@ -76,7 +112,7 @@ quotes; `"""` starts and ends text that runs over several lines.
 | Key | Meaning |
 |-----|---------|
 | `title` | The book's title. Required. |
-| `style` | `"songbook"`, the default and, for now, the only style. |
+| `style` | `"songbook"` (the default) or `"setlist"`: see [Set lists](#set-lists). |
 | `edition` | The edition line on the title page, such as a date. Default: the day you build it. |
 | `subtitle` | A line under the title on the title page. |
 | `notes` | Plain text for the title page, printed as typed, line breaks and all. Separate paragraphs with a blank line. |
@@ -121,14 +157,43 @@ each one's artist.
 ### `[build]`
 
 The same settings as the command-line options, without the `--` in front. On/off
-options take `true` or `false`.
+options take `true` or `false`. Defaults are for a songbook; a set list leaves out the
+extras.
+
+| Key | Meaning | `songbook` | `setlist` |
+|-----|---------|------------|-----------|
+| `title-page` | The title page | on | on |
+| `index` | The A-to-Z index | on | off |
+| `navigation` | The strip of links along the bottom of each page | on | off |
+| `reference` | The chord reference page | on | off |
+| `credits` | Credits and "About this book" | on | off |
+| `set-breaks` | A page before each set | — | on when there's more than one set, or spares |
+| `mid-word-chords` | `"inline"` or `"above"`: see the [README](../README.md) | `"inline"` | `"inline"` |
+| `pdf-tags` | Tag the PDF for screen readers | on | on |
+
+## Set lists
+
+A `setlist` book is for a gig: the songs in running order, with as little clutter as
+possible. It takes its songs from `[[songs.set]]` tables, one per set, in order:
 
 | Key | Meaning |
 |-----|---------|
-| `title-page` | Include the title page (default `true`). |
-| `credits` | Include Credits and "About this book" (default `true`). |
-| `mid-word-chords` | `"inline"` (default) or `"above"`: see the [README](../README.md). |
-| `pdf-tags` | Tag the PDF for screen readers (default `true`). |
+| `name` | The set's name, such as `"Set 1"`. Required. |
+| `songs` | Its songs, in running order. Required. |
+| `running-time` | Free text, such as `"25 min"`. |
+| `notes` | Plain text for the set's break page: songs to drop if running late, reminders, and so on. |
+
+`spares`, under `[songs]`, lists songs you might add or play as encores; they come
+after the last set, under "Spares and encores". A song can be in only one set or in
+the spares. A gig with no sets can use `pick` instead, as one unnamed set. A set list
+doesn't use `include`, `exclude` or `order = "a-z"`.
+
+The book has a title page, a running-order page listing each set and its songs (tap a
+song to go to it), then each set's songs. When `set-breaks` is on, each set and the
+spares start with a break page showing the name, running time and notes. Each song's
+title and page number link back to the running order. With `navigation` on, the strip
+along the bottom links the running order, each set, the spares and (if it's on)
+Reference; a set list with no named sets has no strip.
 
 ## Which setting wins
 
@@ -137,17 +202,19 @@ Settings come in three layers, each overriding the one before:
 1. **The style's defaults**, from `--style` if you give it, otherwise the book file's
    `style`, otherwise `songbook`.
 2. **The book file's `[build]` settings.** These still apply if you change the style on
-   the command line, because they were written into that book on purpose.
+   the command line, because they were written into that book on purpose. (A book with
+   sets only builds as a set list, and one with `include` only as a songbook.)
 3. **Options on the command line**, such as `--credits off`. `--title` and `--edition`
    override the book file's `title` and `edition` too.
 
 ## When something's wrong
 
 StrumBook stops with an error naming the problem, and writes no PDF, if the file isn't
-valid TOML or has no title, a song in `pick` doesn't exist (file names must match
-exactly, capitals included), a source is unknown, has no songs or can't be downloaded,
-or a setting has a value StrumBook doesn't accept. Keys it doesn't know only get a warning, so a book file written for a
-newer StrumBook still builds. Unknown chords and directives in a song are warnings, as
+valid TOML or has no title, a song in `pick`, a set or the spares doesn't exist (file
+names must match exactly, capitals included), a song is in a set list twice, a set has
+no name or no songs, a source is unknown, has no songs or can't be downloaded, or a
+setting has a value StrumBook doesn't accept. Keys it doesn't know only get a warning,
+so a book file written for a newer StrumBook still builds. Unknown chords and directives in a song are warnings, as
 when building from a folder.
 
 ## Downloaded collections
