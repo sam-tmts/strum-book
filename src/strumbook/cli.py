@@ -34,9 +34,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
     build.add_argument("--title", help="the book's title (default: the folder's name)")
     today = date.today()
+    built = f"{today.day} {today:%B %Y}"
     build.add_argument(
         "--edition",
-        default=f"{today.day} {today:%B %Y}",
+        default=built,
         help="the edition line on the title page (default: today's date)",
     )
     build.add_argument(
@@ -88,6 +89,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             mid_word=args.mid_word_chords,
             pdf_tags=args.pdf_tags == "on",
             edition=args.edition,
+            built=built,
             source=args.source,
             title_page=args.title_page == "on",
             credits=args.credits == "on",

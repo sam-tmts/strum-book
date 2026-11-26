@@ -28,6 +28,9 @@
 // Headings exist for bookmarks and link targets; titles are drawn by hand.
 #show heading: none
 
+// The small red capitals above each section's big heading.
+#let kicker(t) = text(9pt, weight: "bold", fill: red, tracking: 0.12em, t)
+
 // Chord names are outlined SVGs, so they never enter the text layer. Python
 // supplies each one's size, which saves Typst measuring them. A shared diagram's
 // label ("Am · Am/C · Am/E") shrinks to fit the diagram's width.
@@ -236,7 +239,7 @@
   foreground: page-furniture("index"),
 )[
   #heading(level: 1, bookmarked: not measuring)[Index] <index>
-  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[INDEX] \
+  #kicker[INDEX] \
   #text(26pt, weight: "bold", data.title) \
   #text(10pt, fill: muted, data.count)
   #v(4mm)
@@ -270,7 +273,7 @@
   foreground: page-furniture("ref"),
 )[
   #heading(level: 1)[Reference] <reference>
-  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[REFERENCE] \
+  #kicker[REFERENCE] \
   #text(26pt, weight: "bold")[Chord shapes] \
   #text(10pt, fill: muted)[Standard tuning #data.tuning]
   #v(6mm)
@@ -292,7 +295,7 @@
 
 #let title-page() = page(margin: (x: side, top: 60mm, bottom: bottom-m))[
   #heading(level: 1)[Title]
-  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[SONGBOOK] \
+  #kicker[SONGBOOK] \
   #text(40pt, weight: "bold", data.title) \
   #text(14pt, fill: muted, data.edition)
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
@@ -300,40 +303,57 @@
 
 // ---------- credits ----------
 
-#let credits-page() = page(
-  margin: (x: side, top: 16mm, bottom: bottom-m),
-  foreground: page-furniture("credits"),
-)[
-  #heading(level: 1)[Credits] <credits>
-  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[CREDITS] \
-  #let credited = data.songs.filter(s => s.credit != "")
-  #if credited.len() > 0 [
-    #text(26pt, weight: "bold")[Words and music]
-    #v(2mm)
-    #columns(2, gutter: 8mm, for song in credited [
-      #link(label("song-" + song.id), block(breakable: false, below: 3.5mm, {
-        text(11pt, weight: "bold", song.title)
-        linebreak()
-        text(9pt, fill: muted, song.credit)
-      })) #label("credit-" + song.id)
-    ])
-  ]
-  #let made-with = (
-    ("StrumBook", "https://github.com/sam-tmts/strumbook", "builds this book"),
-    ("Typst", "https://typst.app", "lays out the pages"),
-    ("Atkinson Hyperlegible", "https://www.brailleinstitute.org/freefont/",
-      "the Braille Institute's typeface, easy to read at arm's length"),
+// The song credits, then "About this book" on a page of its own. The first page
+// carries the Credits bookmark; with no credited songs, that's the About page.
+#let credits-section() = {
+  let credited = data.songs.filter(s => s.credit != "")
+  let section-page(body) = page(
+    margin: (x: side, top: 16mm, bottom: bottom-m),
+    foreground: page-furniture("credits"),
+    body,
   )
-  #if data.source != none { made-with.push(("Songs", data.source, data.source)) }
-  // Kept together, so the heading never ends a page alone.
-  #block(breakable: false, {
-    group-head[Made with]
-    v(1mm)
-    for (name, url, what) in made-with [
-      #link(url)[#text(11pt, weight: "bold", name) #h(1.5mm) #text(10pt, fill: muted, what)] \
+  let opening = [#heading(level: 1)[Credits] <credits>]
+  if credited.len() > 0 {
+    section-page[
+      #opening
+      #kicker[CREDITS] \
+      #text(26pt, weight: "bold")[Words and music]
+      #v(2mm)
+      #columns(2, gutter: 8mm, for song in credited [
+        #link(label("song-" + song.id), block(breakable: false, below: 3.5mm, {
+          text(11pt, weight: "bold", song.title)
+          linebreak()
+          text(9pt, fill: muted, song.credit)
+        })) #label("credit-" + song.id)
+      ])
     ]
-  })
-]
+  }
+  let made = (
+    ("StrumBook", "built this book on " + data.built, "https://github.com/sam-tmts/strumbook"),
+    ("Typst", "laid out the pages", "https://typst.app"),
+    ("Atkinson Hyperlegible", "set the words, in the Braille Institute's typeface made to be easy to read",
+      "https://www.brailleinstitute.org/freefont/"),
+  )
+  if data.source != none { made.push(("Songs", "came from this collection", data.source)) }
+  let address(url) = url.trim("https://", at: start).trim("http://", at: start).trim("/", at: end)
+  section-page[
+    #if credited.len() == 0 { opening }
+    #heading(level: 2)[About this book]
+    #kicker[ABOUT THIS BOOK] \
+    #text(26pt, weight: "bold")[How it was made]
+    #v(4mm)
+    // Rules under each row, like the index. The address sits under the description.
+    #table(
+      columns: (auto, 1fr),
+      inset: (left: 0mm, right: 5mm, y: 2.6mm),
+      stroke: (bottom: 0.5pt + rule, x: none, top: none),
+      ..made.map(((name, what, url)) => (
+        link(url, text(11pt, weight: "bold", name)),
+        [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))],
+      )).flatten()
+    )
+  ]
+}
 
 // ---------- the book ----------
 
@@ -348,5 +368,5 @@
   index-page()
   for song in data.songs { song-page(song, song.show_diagrams, "") }
   reference-page()
-  if data.credits { credits-page() }
+  if data.credits { credits-section() }
 }

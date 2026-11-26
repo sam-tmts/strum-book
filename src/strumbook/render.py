@@ -29,12 +29,13 @@ def render(
     mid_word: str,
     pdf_tags: bool,
     edition: str,
+    built: str,
     source: str | None,
     title_page: bool,
     credits: bool,
 ) -> None:
-    """Write `book` as a PDF. `mid_word` is "inline" or "above". `source` is a URL
-    for the songs, shown in Credits."""
+    """Write `book` as a PDF. `mid_word` is "inline" or "above". `built` is the
+    build date, for the About page; `source` is a URL for the songs, shown there."""
     songs = [_song_data(s) for s in book.songs]
     reference = [
         {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
@@ -46,6 +47,7 @@ def render(
         "title": book.title,
         "count": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
         "edition": edition,
+        "built": built,
         "source": source,
         "title_page": title_page,
         "credits": credits,

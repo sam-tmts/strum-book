@@ -29,7 +29,7 @@ of links along the bottom to the index, each letter and the reference page. Opti
   out for a private collection.
 - `--title-page on|off`: include the title page (default on).
 - `--credits on|off`: include Credits (default on): each song's credits, linked both
-  ways with its credit line, and the projects the book is made with.
+  ways with its credit line, then an "About this book" page saying how it was made.
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
   drawn inline by default, which splits the word for search. `above` floats it over
   the word instead, so search finds the whole word.

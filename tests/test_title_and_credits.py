@@ -119,18 +119,28 @@ def test_credits_entries_and_credit_lines_link_to_each_other(
     assert not {link.target for link in mango} & set(credits)
 
 
-def test_made_with_links_and_the_source_only_when_given(
+def test_about_page_says_how_the_book_was_made_with_links(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     plain = build(tmp_path, capsys)
     credits = book_map(plain).pages_of("Credits")
     assert uris(plain, credits) == TOOLS
-    text = page_text(plain, credits)
-    for name in ["StrumBook", "Typst", "Atkinson Hyperlegible"]:
-        assert name in text
+    about = page_text(plain, range(credits[-1], credits[-1] + 1))  # its own page
+    assert "ABOUT THIS BOOK How it was made" in about
+    assert "Words and music" not in about
+    today = date.today()  # this can flake only if the build runs over midnight
+    assert f"StrumBook built this book on {today.day} {today:%B %Y}" in about
+    assert "Typst laid out the pages" in about
+    assert "Atkinson Hyperlegible set the words" in about
+    for address in ["github.com/sam-tmts/strumbook", "brailleinstitute.org/freefont"]:
+        assert address in about
+    assert "https://" not in about
+    assert "freefont/" not in about
     sourced = build(tmp_path, capsys, "--source", SOURCE, name="sourced.pdf")
     credits = book_map(sourced).pages_of("Credits")
     assert uris(sourced, credits) == TOOLS | {SOURCE}
+    about = page_text(sourced, range(credits[-1], credits[-1] + 1))
+    assert "Songs came from this collection example.org/our-songs" in about
 
 
 def test_credits_has_an_index_row_next_to_chord_shapes(
@@ -185,7 +195,9 @@ def test_both_off_leaves_just_index_songs_and_reference(
 ) -> None:
     reader = build(tmp_path, capsys, "--title-page", "off", "--credits", "off")
     assert book_map(reader).titles == ["Index", *ORDER, "Reference"]
-    assert "Made with" not in text_of(reader)
+    text = text_of(reader)
+    assert "Made with" not in text
+    assert "How it was made" not in text
 
 
 @pytest.mark.parametrize("option", ["--title-page", "--credits"])
@@ -212,7 +224,7 @@ def test_edition_defaults_to_todays_date(
     assert f"{today.day} {today:%B %Y}" in page_text(PdfReader(out), range(1))
 
 
-def test_credits_without_credited_songs_shows_only_made_with(
+def test_credits_without_credited_songs_is_just_the_about_page(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     folder = tmp_path / "plain"
@@ -221,8 +233,10 @@ def test_credits_without_credited_songs_shows_only_made_with(
     out = tmp_path / "book.pdf"
     assert main(["build", str(folder), "-o", str(out)]) == 0, capsys.readouterr().err
     reader = PdfReader(out)
-    text = page_text(reader, book_map(reader).pages_of("Credits"))
-    assert "Made with" in text
+    credits = book_map(reader).pages_of("Credits")
+    assert len(credits) == 1
+    text = page_text(reader, credits)
+    assert "How it was made" in text
     assert "Words and music" not in text
 
 
