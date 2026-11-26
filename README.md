@@ -30,7 +30,8 @@ of links along the bottom to the index, each letter and the reference page, unle
 a book file keeps its songs in a listed order. Options, which override a book file's
 own settings:
 
-- `--title TEXT`: the book's title (default: the folder's name).
+- `--title TEXT`: the book's title (default: the book file's title, or the folder's
+  name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
 - `--style songbook`: the book's style; `songbook` is the only one so far.
 - `--title-page on|off`: include the title page (default on).

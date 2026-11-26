@@ -101,20 +101,21 @@ is too tricky for the group's beginners, and perhaps some songs of its own. A ba
 might keep two collections, covers and originals, and build its book from those plus
 the group's collection.
 
-- **A book definition names its collections and its songs.** It lives in the `books/`
-  folder of whichever repository owns the book.
+- **A [book file](book-files.md) names its collections and its songs.** It can live
+  anywhere, often in the `books/` folder of whichever repository owns the book.
 - **Songs are referred to by collection and file name**, such as
-  `group:the-holly-and-the-ivy--traditional`, so the same file name in two collections
-  never clashes.
+  `group:the-holly-and-the-ivy--traditional`, where `group` is the book file's name for
+  that collection, so the same file name in two collections never clashes.
 - **The same song in two collections**, such as a band's arrangement of a group song, is
   two separate files. The book picks one; the band's version can record where it came
   from with `{meta: ...}`.
 - **Access stays per repository.** Whoever builds a book needs read access to every
-  collection it uses, and builds from local clones.
+  collection it uses: StrumBook reads local folders, or clones with the builder's own
+  git sign-in.
 - **Rights matter more.** A band's originals are its own and could appear in a book
   posted publicly.
 
-The first goal needs only one collection, but its design shouldn't rule this out.
+Book files (issue #12) cover all of this.
 
 ## What we learnt from ChordPro
 

@@ -79,7 +79,7 @@ quotes; `"""` starts and ends text that runs over several lines.
 | `style` | `"songbook"`, the default and, for now, the only style. |
 | `edition` | The edition line on the title page, such as a date. Default: the day you build it. |
 | `subtitle` | A line under the title on the title page. |
-| `notes` | Plain text for the title page, printed as typed. Separate paragraphs with a blank line. |
+| `notes` | Plain text for the title page, printed as typed, line breaks and all. Separate paragraphs with a blank line. |
 
 ### `[sources.<name>]`
 
@@ -89,14 +89,15 @@ digits and hyphens, is how songs refer to it: `[sources.carols]` is `carols`.
 | Key | Meaning |
 |-----|---------|
 | `path` | A folder on this computer, absolute or relative to the book file. |
-| `git` | A git repository's address, `https://…` or ssh (`git@github.com:…`). StrumBook downloads it with your computer's `git`, so private repositories work if you can already clone them. |
-| `pin` | `git` only: a commit or tag to use. Without one, every build fetches the latest songs. Pin a book that must never change. |
+| `git` | A git repository's address, `https://…` or ssh (`git@github.com:…`). StrumBook downloads it with your computer's `git`, so private repositories work if you can already clone them. Keep passwords and tokens out of the address: git's own sign-in looks after them. |
+| `pin` | `git` only: a commit or tag to use. Without one, every build fetches the latest songs. Pin a book that must never change. (A branch name stays wherever it was when first downloaded.) |
 | `folder` | Where the songs are inside the collection. Default: `songs/` if there is one, otherwise the top level. |
 | `link` | A web address for the collection, shown in the book's Credits. |
 
-Each source has either `path` or `git`. Credits says where the songs came from: each
-source's `link`, or else its `git` address. A `path` source without a `link` isn't
-mentioned, which suits a private collection.
+Each source has either `path` or `git`; two sources may share a `git` address (with
+different `folder`s, say) only if they also share its `pin`. Credits says where the
+songs came from: each source's `link`, or else its `git` address, printed in the book.
+A `path` source without a `link` isn't mentioned, which suits a private collection.
 
 ### `[songs]`
 
@@ -107,7 +108,7 @@ then the song's file name without `.cho`, spaces and all.
 |-----|---------|
 | `include` | `"all"` for every song in every source, or a list of source names, such as `["group", "band"]`. |
 | `pick` | A list of single songs, such as `["carols:Away In A Manger"]`. |
-| `exclude` | Songs to leave out, even if `include` or `pick` brings them in. |
+| `exclude` | Songs to leave out, even if `include` or `pick` brings them in. A song that no longer exists only gets a warning. |
 | `order` | `"a-z"` (the default) sorts the songs by title. `"listed"` keeps them in the order of `pick`, followed by any songs `include` adds. |
 
 The index always lists the songs A to Z. The strip of links along the bottom of each
@@ -142,16 +143,18 @@ Settings come in three layers, each overriding the one before:
 
 ## When something's wrong
 
-StrumBook stops with an error naming the problem, and writes no PDF, if a song in
-`pick` or `exclude` doesn't exist, a source is unknown or has no songs, or the file
-isn't valid TOML. Keys it doesn't know only get a warning, so a book file written for a
+StrumBook stops with an error naming the problem, and writes no PDF, if the file isn't
+valid TOML or has no title, a song in `pick` doesn't exist (file names must match
+exactly, capitals included), a source is unknown, has no songs or can't be downloaded,
+or a setting has a value StrumBook doesn't accept. Keys it doesn't know only get a warning, so a book file written for a
 newer StrumBook still builds. Unknown chords and directives in a song are warnings, as
 when building from a folder.
 
 ## Downloaded collections
 
 StrumBook keeps the collections it downloads in your computer's cache folder:
-`~/Library/Caches/strumbook/` on a Mac, `~/.cache/strumbook/` on Linux and
+`~/Library/Caches/strumbook/` on a Mac, `$XDG_CACHE_HOME/strumbook/` (usually
+`~/.cache/strumbook/`) on Linux and
 `%LOCALAPPDATA%\strumbook\cache\` on Windows. Deleting it is always safe: the next
 build downloads them again. Without a network, a build uses the copy from last time
 and warns that it may be out of date.
