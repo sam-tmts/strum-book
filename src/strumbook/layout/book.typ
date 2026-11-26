@@ -1,5 +1,6 @@
-// StrumBook's FTR layout: title page, index, songs with chord diagrams, reference
-// page, credits.
+// StrumBook's FTR layout. A songbook: title page, index, songs with chord diagrams,
+// reference page, credits. A set list: title page, running order, then each set's
+// break page and songs; the index, reference page and credits are optional.
 // All content arrives as JSON in sys.inputs.data, from strumbook/render.py.
 // In "measure" mode it lays out the index and each song with and without diagrams,
 // and reports their page spans as <pages> metadata for render.py to read back.
@@ -18,7 +19,6 @@
 #let top-m = 30mm
 #let bottom-m = 26mm
 #let strip-h = 11mm
-#let cells = 28 // index, A–Z, reference
 
 #set document(title: data.title)
 #set page(paper: "a4")
@@ -124,38 +124,45 @@
 #let index-icon = stack(spacing: 1.1mm, ..range(3).map(_ => line(length: 4.2mm, stroke: 1.2pt + ink)))
 #let ref-icon = grid(columns: (1.3mm,) * 3, rows: (1.3mm,) * 3, stroke: 0.8pt + ink)
 
-// Every cell is the same size. Empty letters are grey and jump to the next letter
-// with songs, or to the reference page after the last one.
+// Cells come from render.py: index (or running order), letters or set names, and
+// reference. Every cell is the same size. Empty letters are grey and jump onwards.
 #let strip(current) = {
-  let w = (page-w - 2 * side) / cells
+  let w = (page-w - 2 * side) / data.strip.len()
   let cell(body, active) = box(width: w, height: strip-h, {
-    place(center + horizon, body)
+    place(center + horizon, box(width: w - 2mm, align(center, body)))
     if active { place(bottom + center, rect(width: 75%, height: 2pt, fill: red)) }
   })
-  let target(t) = if t == "ref" { <reference> } else { label("song-" + t) }
   grid(
-    columns: (w,) * cells,
-    link(<index>, cell(index-icon, current == "index")),
-    ..data.letters.map(l => {
-      let active = current == l.letter
-      let colour = if active { ink } else if l.has { muted } else { faint }
-      link(target(l.target), cell(
-        text(10.5pt, weight: if active { "bold" } else { "regular" }, fill: colour, l.letter),
-        active,
-      ))
+    columns: (w,) * data.strip.len(),
+    ..data.strip.map(c => {
+      let active = current == c.key
+      let icon = c.at("icon", default: none)
+      let body = if icon == "index" { index-icon } else if icon == "ref" { ref-icon } else {
+        let colour = if active { ink } else if c.at("dim", default: false) { faint } else { muted }
+        let size = if c.text.len() == 1 { 10.5pt } else { 9pt }
+        text(size, weight: if active { "bold" } else { "regular" }, fill: colour, c.text)
+      }
+      link(label(c.target), cell(body, active))
     }),
-    link(<reference>, cell(ref-icon, current == "ref")),
   )
 }
 
-// The page number, top right, links back to the song's index entry (`back`).
+// The page number, top right, links back to the song's index or running order entry
+// (`back`).
 #let page-furniture(current, back: none) = {
   let number = text(15pt, weight: "bold", fill: red, context counter(page).display())
   if back != none and not measuring { number = link(back, number) }
   place(top + right, dx: -side, dy: 13mm, number)
-  if data.navigation and not measuring {
+  if data.strip.len() > 0 and not measuring {
     place(bottom + left, dx: side, dy: -5mm, strip(current))
   }
+}
+
+// Plain-text notes: paragraphs of lines.
+#let notes-block(notes) = if notes.len() > 0 {
+  v(10mm)
+  set par(spacing: 1em)
+  for lines in notes { par(text(12pt, lines.join(linebreak()))) }
 }
 
 // Reports a page span to render.py in measure mode.
@@ -174,7 +181,9 @@
   let key = song.id + variant
   let start = label("song-" + key)
   let end = label("end-" + key)
-  let back = label("index-" + song.id)
+  let back = if data.style == "setlist" { <running-order> } else if data.index_page {
+    label("index-" + song.id)
+  }
   let cols = song.diagram_columns
   let dw = if show-diagrams and cols > 0 { cols * diagram-w + (cols - 1) * 2mm + 7mm } else { 0mm }
   page(
@@ -183,7 +192,7 @@
       let first = here().page() == locate(start).page()
       let title = text(24pt, weight: "bold", song.title)
       block(width: page-w - 2 * side - 16mm, {
-        if measuring { title } else { link(back, title) }
+        if measuring or back == none { title } else { link(back, title) }
         if not first { text(14pt, fill: muted)[ (continued)] }
       })
     },
@@ -192,7 +201,7 @@
         text(11pt, weight: "bold", fill: red)[Continues on page #(here().page() + 1) →]
       }
     },
-    foreground: page-furniture(song.letter, back: back),
+    foreground: page-furniture(song.key, back: back),
     // Drawn as the background, so the diagrams repeat on continuation pages.
     background: if dw > 0mm {
       place(top + right, dx: -side, dy: top-m + 1mm, box(
@@ -224,10 +233,10 @@
 })
 
 // The whole row, padding included, is the tap target.
-#let index-row(body, number, target) = {
+#let index-row(body, number, target, pad: 2.6mm) = {
   let row = block(
     width: 100%,
-    inset: (y: 2.6mm),
+    inset: (y: pad),
     stroke: (bottom: 0.5pt + rule),
     grid(columns: (1fr, auto), column-gutter: 3mm, body, number),
   )
@@ -257,15 +266,59 @@
         target,
       ) #label("index-" + song.id)]
     }
-    group-head[Reference]
-    index-row(
-      [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning)],
-      index-number(<reference>),
-      <reference>,
-    )
+    if data.reference_page or data.credits { group-head[Reference] }
+    if data.reference_page {
+      index-row(
+        [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning)],
+        index-number(<reference>),
+        <reference>,
+      )
+    }
     if data.credits { index-row([Credits], index-number(<credits>), <credits>) }
   })
   #report("index", "", <index>)
+]
+
+// ---------- set lists ----------
+
+// Each set's name and running time, then its songs, each row a link to the song.
+#let running-order-page() = page(
+  margin: (x: side, top: 16mm, bottom: bottom-m),
+  foreground: page-furniture("running-order"),
+)[
+  #heading(level: 1)[Running order] <running-order>
+  #kicker[RUNNING ORDER] \
+  #text(26pt, weight: "bold", data.title) \
+  #text(10pt, fill: muted, data.count)
+  #v(2mm)
+  #for s in data.sections {
+    if s.name != "" {
+      block(above: 5mm, below: 1mm, {
+        text(12pt, weight: "bold", fill: red, s.name)
+        if s.running_time != "" { h(2mm); text(10pt, fill: muted, s.running_time) }
+      })
+    }
+    for song in s.songs {
+      let target = label("song-" + song.id)
+      index-row(
+        [#song.title #h(1.5mm) #text(10pt, fill: muted, song.artist)],
+        index-number(target),
+        target,
+        pad: 1.8mm,
+      )
+    }
+  }
+]
+
+// Before a set: its name, running time and notes.
+#let break-page(s) = page(
+  margin: (x: side, top: 60mm, bottom: bottom-m),
+  foreground: page-furniture(s.key, back: <running-order>),
+)[
+  #heading(level: 1, s.name) #label(s.key)
+  #text(40pt, weight: "bold", s.name) \
+  #if s.running_time != "" { text(14pt, fill: muted, s.running_time) }
+  #notes-block(s.notes)
 ]
 
 // ---------- reference ----------
@@ -297,15 +350,11 @@
 
 #let title-page() = page(margin: (x: side, top: 60mm, bottom: bottom-m))[
   #heading(level: 1)[Title]
-  #kicker[SONGBOOK] \
+  #kicker(if data.style == "setlist" [SET LIST] else [SONGBOOK]) \
   #text(40pt, weight: "bold", data.title) \
   #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
   #text(14pt, fill: muted, data.edition)
-  #if data.notes.len() > 0 {
-    v(10mm)
-    set par(spacing: 1em)
-    for lines in data.notes { par(text(12pt, lines.join(linebreak()))) }
-  }
+  #notes-block(data.notes)
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]
 
@@ -373,8 +422,13 @@
   }
 } else {
   if data.title_page { title-page() }
-  index-page()
-  for song in data.songs { song-page(song, song.show_diagrams, "") }
-  reference-page()
+  if data.style == "setlist" { running-order-page() }
+  if data.index_page { index-page() }
+  for song in data.songs {
+    let set-break = song.at("break", default: none)
+    if set-break != none { break-page(set-break) }
+    song-page(song, song.show_diagrams, "")
+  }
+  if data.reference_page { reference-page() }
   if data.credits { credits-section() }
 }

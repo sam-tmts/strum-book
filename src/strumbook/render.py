@@ -32,17 +32,16 @@ _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
 def render(
     book: Book,
     output: Path,
+    settings: dict,
     *,
-    mid_word: str,
-    pdf_tags: bool,
+    style: str,
     edition: str,
     built: str,
-    title_page: bool,
-    credits: bool,
 ) -> None:
-    """Write `book` as a PDF. `mid_word` is "inline" or "above". `built` is the
-    build date, for the About page."""
+    """Write `book` as a PDF in `style` ("songbook" or "setlist"), with the build
+    `settings` (see bookfile.STYLES). `built` is the build date, for the About page."""
     songs = [_song_data(s) for s in book.songs]
+    sections = _sections(book, songs, settings["set-breaks"])
     reference = [
         {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
         for root, diagrams in book.reference
@@ -57,10 +56,14 @@ def render(
         "edition": edition,
         "built": built,
         "sources": list(book.sources),
-        "title_page": title_page,
-        "credits": credits,
+        "style": style,
+        "title_page": settings["title-page"],
+        "index_page": settings["index"],
+        "reference_page": settings["reference"],
+        "credits": settings["credits"],
         "tuning": "GCEA",
-        "mid_word": mid_word,
+        "mid_word": settings["mid-word-chords"],
+        "sections": sections,
         "songs": songs,
         # The index is always A to Z, whatever the book's order.
         "index": [
@@ -72,9 +75,7 @@ def render(
             }
             for s in sorted(book.songs, key=lambda s: sort_key(s.song))
         ],
-        # The strip jumps to letters, so only an A-to-Z book has one.
-        "navigation": book.a_to_z,
-        "letters": _letters(book),
+        "strip": _strip(book, settings, sections) if settings["navigation"] else [],
         "reference": reference,
     }
     try:
@@ -91,7 +92,7 @@ def render(
         pdf = typst.compile(
             str(LAYOUT / "book.typ"),
             sys_inputs={"data": json.dumps(data)},
-            pdf_tags=pdf_tags,
+            pdf_tags=settings["pdf-tags"],
             **_OPTIONS,
         )
     except typst.TypstError as e:
@@ -129,6 +130,7 @@ def _song_data(book_song: BookSong) -> dict:
         "artist": song.artist,
         "credit": song.credit_line,
         "letter": book_song.letter,
+        "key": book_song.letter,  # the strip cell this song lights up
         "blocks": blocks,
         "diagrams": [_diagram_data(d) for d in book_song.diagrams],
         "diagram_columns": diagram_columns(len(book_song.diagrams)),
@@ -141,14 +143,75 @@ def _paragraphs(text: str) -> list[list[str]]:
     return [[line.strip() for line in p.splitlines()] for p in paragraphs if p.strip()]
 
 
-def _letters(book: Book) -> list[dict]:
+def _sections(book: Book, songs: list[dict], set_breaks: bool | None) -> list[dict]:
+    """A set list's sets and spares, each with its songs. A named one gets a break
+    page before its first song when set breaks are on: by default, when there's more
+    than one section."""
+    if set_breaks is None:
+        set_breaks = len(book.sections) > 1
+    result, start = [], 0
+    for k, section in enumerate(book.sections):
+        part = songs[start : start + section.count]
+        start += section.count
+        data = {
+            "key": f"set-{k}",
+            "name": section.name,
+            "running_time": section.running_time,
+            "notes": _paragraphs(section.notes),
+            "songs": [{f: s[f] for f in ("id", "title", "artist")} for s in part],
+            "break": set_breaks and bool(section.name),
+        }
+        result.append(data)
+        for song in part:
+            song["key"] = data["key"]
+        if data["break"]:
+            part[0]["break"] = data
+    return result
+
+
+def _strip(book: Book, settings: dict, sections: list[dict]) -> list[dict]:
+    """The cells of the link strip, left to right: each has a `key` (what a page
+    lights up), a `target` label and an `icon` or `text`. Empty when there's no strip:
+    a set list needs named sets, a songbook needs songs in A-to-Z order."""
+    if sections:
+        named = [s for s in sections if s["name"]]
+        if not named:
+            return []
+        cells = [{"key": "running-order", "icon": "index", "target": "running-order"}]
+        cells += [
+            {
+                "key": s["key"],
+                "text": s["name"],
+                "target": s["key"] if s["break"] else "song-" + s["songs"][0]["id"],
+            }
+            for s in named
+        ]
+    elif book.a_to_z:
+        index = settings["index"]
+        cells = [{"key": "index", "icon": "index", "target": "index"}] if index else []
+        cells += _letters(book, "reference" if settings["reference"] else None)
+    else:
+        return []
+    if settings["reference"]:
+        cells.append({"key": "ref", "icon": "ref", "target": "reference"})
+    return cells
+
+
+def _letters(book: Book, end: str | None) -> list[dict]:
     """Link strip letters. An empty letter targets the next letter with songs, and
-    after the last one the reference page ("ref")."""
-    first = {s.letter: s.id for s in reversed(book.songs)}
-    letters, target = [], "ref"
+    after the last one `end` (or, with none, the last song)."""
+    first = {s.letter: f"song-{s.id}" for s in reversed(book.songs)}
+    letters, target = [], end or f"song-{book.songs[-1].id}"
     for letter in reversed(_LETTERS):
         target = first.get(letter, target)
-        letters.append({"letter": letter, "has": letter in first, "target": target})
+        letters.append(
+            {
+                "key": letter,
+                "text": letter,
+                "dim": letter not in first,
+                "target": target,
+            }
+        )
     return letters[::-1]
 
 

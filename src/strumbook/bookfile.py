@@ -8,14 +8,29 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from strumbook.book import Book, BuildError, make_book, song_files
+from strumbook.book import Book, BuildError, Section, make_book, song_files
 from strumbook.sources import fetch
 
 # Each style's defaults for the [build] settings; the first layer of three.
+# set-breaks None means: on when a set list has more than one set, or spares.
 STYLES = {
     "songbook": {
         "title-page": True,
+        "index": True,
+        "navigation": True,
+        "reference": True,
         "credits": True,
+        "set-breaks": False,
+        "mid-word-chords": "inline",
+        "pdf-tags": True,
+    },
+    "setlist": {
+        "title-page": True,
+        "index": False,
+        "navigation": False,
+        "reference": False,
+        "credits": False,
+        "set-breaks": None,
         "mid-word-chords": "inline",
         "pdf-tags": True,
     },
@@ -24,7 +39,9 @@ CHOICES = {"mid-word-chords": ("inline", "above")}
 
 _BOOK_KEYS = {"title", "style", "edition", "subtitle", "notes"}
 _SOURCE_KEYS = {"path", "git", "pin", "folder", "link"}
-_SONGS_KEYS = {"include", "pick", "exclude", "order"}
+_SONGS_KEYS = {"include", "pick", "exclude", "order", "set", "spares"}
+_SET_KEYS = {"name", "songs", "running-time", "notes"}
+SPARES = "Spares and encores"
 _NAME = re.compile(r"[a-z0-9-]+")
 
 
@@ -36,7 +53,8 @@ class BookFile:
     build: dict[str, object]  # the [build] settings, checked
 
 
-def read_book_file(path: Path) -> BookFile:
+def read_book_file(path: Path, style: str | None = None) -> BookFile:
+    """Read a book file; `style`, from the command line, overrides the file's."""
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8-sig"))
     except UnicodeDecodeError:
@@ -52,7 +70,7 @@ def read_book_file(path: Path) -> BookFile:
     title = _text(book, "title", "[book]")
     if not title:
         raise BuildError('the book file needs a title: add title = "…" under [book]')
-    style = _text(book, "style", "[book]") or "songbook"
+    style = style or _text(book, "style", "[book]") or "songbook"
     if style not in STYLES:
         raise BuildError(f"unknown style {style!r}: use {_either(STYLES)}")
 
@@ -88,6 +106,32 @@ def read_book_file(path: Path) -> BookFile:
 
     songs = _table(data, "songs")
     warnings += _unknown(songs, _SONGS_KEYS, "[songs]")
+    if style == "setlist":
+        chosen, sections = _setlist(songs, folders, warnings)
+    else:
+        chosen, sections = _songbook(songs, folders, warnings), ()
+    return BookFile(
+        book=make_book(
+            title,
+            chosen,
+            a_to_z=_text(songs, "order", "[songs]") in ("", "a-z") and not sections,
+            subtitle=_text(book, "subtitle", "[book]"),
+            notes=_text(book, "notes", "[book]"),
+            sources=tuple(dict.fromkeys(links)),
+            sections=sections,
+            warnings=tuple(warnings),
+        ),
+        style=style,
+        edition=_text(book, "edition", "[book]") or None,
+        build=build,
+    )
+
+
+def _songbook(songs: dict, folders: dict[str, Path], warnings: list[str]) -> list[Path]:
+    """The songs `include`, `pick` and `exclude` choose."""
+    for key in ("set", "spares"):
+        if key in songs:
+            raise BuildError(f'[songs] {key} is for set lists: add style = "setlist"')
     order = _text(songs, "order", "[songs]") or "a-z"
     if order not in ("a-z", "listed"):
         raise BuildError('[songs] order must be "a-z" or "listed"')
@@ -118,20 +162,59 @@ def read_book_file(path: Path) -> BookFile:
         raise BuildError(
             "the book file chooses no songs: add include or pick under [songs]"
         )
-    return BookFile(
-        book=make_book(
-            title,
-            chosen,
-            a_to_z=order == "a-z",
-            subtitle=_text(book, "subtitle", "[book]"),
-            notes=_text(book, "notes", "[book]"),
-            sources=tuple(dict.fromkeys(links)),
-            warnings=tuple(warnings),
-        ),
-        style=style,
-        edition=_text(book, "edition", "[book]") or None,
-        build=build,
-    )
+    return chosen
+
+
+def _setlist(
+    songs: dict, folders: dict[str, Path], warnings: list[str]
+) -> tuple[list[Path], tuple[Section, ...]]:
+    """The songs in running order, from [[songs.set]] or `pick`, then `spares`."""
+    for key in ("include", "exclude"):
+        if key in songs:
+            raise BuildError(
+                f"[songs] {key} isn't for set lists: choose songs with [[songs.set]]"
+            )
+    if _text(songs, "order", "[songs]") not in ("", "listed"):
+        raise BuildError(
+            '[songs] order = "a-z" isn\'t for set lists: they keep their running order'
+        )
+    sets = songs.get("set", [])
+    if not isinstance(sets, list) or not all(isinstance(s, dict) for s in sets):
+        raise BuildError("[songs] set must be [[songs.set]] tables")
+    if sets and "pick" in songs:
+        raise BuildError("use [[songs.set]] or [songs] pick in a set list, not both")
+    groups = []
+    for n, table in enumerate(sets, 1):
+        where = f"[[songs.set]] number {n}"
+        warnings += _unknown(table, _SET_KEYS, where)
+        name = _text(table, "name", where)
+        if not name:
+            raise BuildError(f'{where} needs a name: name = "…"')
+        refs = _list(table.get("songs", []), f"set {name!r} songs")
+        if not refs:
+            raise BuildError(f'set {name!r} has no songs: songs = ["…"]')
+        time = _text(table, "running-time", where)
+        notes = _text(table, "notes", where)
+        groups.append((Section(name, len(refs), time, notes), refs, f"set {name!r}"))
+    if picked := _list(songs.get("pick", []), "pick"):
+        groups.append((Section("", len(picked)), picked, "pick"))
+    if spares := _list(songs.get("spares", []), "spares"):
+        groups.append((Section(SPARES, len(spares), spares=True), spares, "spares"))
+    chosen: list[Path] = []
+    for _, refs, key in groups:
+        for ref in refs:
+            song, missing = _song(ref, folders, key)
+            if missing:
+                raise BuildError(missing)
+            if song in chosen:
+                raise BuildError(
+                    f"{ref!r} is in the set list twice: a song can be in only one "
+                    "set or in spares"
+                )
+            chosen.append(song)
+    if not chosen:
+        raise BuildError("the set list has no songs: add [[songs.set]] tables")
+    return chosen, tuple(section for section, _, _ in groups)
 
 
 def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
@@ -196,7 +279,7 @@ def _text(table: dict, key: str, where: str) -> str:
 
 def _list(value: object, key: str) -> list:
     if not isinstance(value, list):
-        raise BuildError(f'[songs] {key} must be a list: {key} = ["…"]')
+        raise BuildError(f'[songs] {key} must be a list: ["…"]')
     return value
 
 

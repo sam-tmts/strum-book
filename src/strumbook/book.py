@@ -39,6 +39,17 @@ class BookSong:
 
 
 @dataclass(frozen=True)
+class Section:
+    """A set in a set list, or its spares: the next `count` songs in book order."""
+
+    name: str  # "" for the unnamed set a pick list makes
+    count: int
+    running_time: str = ""
+    notes: str = ""
+    spares: bool = False
+
+
+@dataclass(frozen=True)
 class Book:
     title: str
     songs: tuple[BookSong, ...]  # in book order
@@ -48,6 +59,7 @@ class Book:
     subtitle: str = ""
     notes: str = ""  # plain text; paragraphs separated by blank lines
     sources: tuple[str, ...] = ()  # web addresses for Credits
+    sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
 
 
 def group_diagrams(chord_names: list[str]) -> list[Diagram]:
@@ -102,6 +114,7 @@ def make_book(
     subtitle: str = "",
     notes: str = "",
     sources: tuple[str, ...] = (),
+    sections: tuple[Section, ...] = (),
     warnings: tuple[str, ...] = (),
 ) -> Book:
     """A book of the songs in `paths`, sorted by title, or in the order given."""
@@ -147,6 +160,7 @@ def make_book(
         subtitle=subtitle,
         notes=notes,
         sources=sources,
+        sections=sections,
     )
 
 

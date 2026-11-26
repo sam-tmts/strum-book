@@ -40,14 +40,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--edition", help="the edition line on the title page (default: today's date)"
     )
     build.add_argument(
-        "--style", choices=list(STYLES), help="the book's style (default: songbook)"
+        "--style",
+        choices=list(STYLES),
+        help="songbook (A to Z, the default) or setlist (a gig's running order); "
+        "the defaults below are for songbook",
     )
-    build.add_argument(
-        "--title-page", choices=_ON_OFF, help="include the title page (default on)"
-    )
-    build.add_argument(
-        "--credits", choices=_ON_OFF, help="include Credits (default on)"
-    )
+    for option, what, default in [
+        ("title-page", "the title page", "on"),
+        ("index", "the index", "on; setlist off"),
+        ("navigation", "the strip of links along the bottom", "on; setlist off"),
+        ("reference", "the chord reference page", "on; setlist off"),
+        ("credits", "Credits", "on; setlist off"),
+        ("set-breaks", "a page before each set", "setlist: on for several sets"),
+    ]:
+        build.add_argument(
+            f"--{option}", choices=_ON_OFF, help=f"include {what} (default {default})"
+        )
     build.add_argument(
         "--mid-word-chords",
         choices=CHOICES["mid-word-chords"],
@@ -71,7 +79,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     built = f"{today.day} {today:%B %Y}"
     try:
         if args.book.is_file() or args.book.suffix == ".toml":
-            recipe = read_book_file(args.book)
+            recipe = read_book_file(args.book, args.style)
+        elif args.style == "setlist":
+            raise BuildError("the setlist style needs a book file with sets")
         else:  # the shortcut: every song in one folder
             recipe = BookFile(read_book(args.book), "songbook", None, {})
         book = recipe.book
@@ -84,18 +94,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             for key in STYLES["songbook"]
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
-        settings = {**STYLES[args.style or recipe.style], **recipe.build, **given}
+        settings = {**STYLES[recipe.style], **recipe.build, **given}
         for warning in book.warnings:
             print(f"warning: {warning}", file=sys.stderr)
+        edition = args.edition or recipe.edition or built
         render(
             book,
             args.output,
-            mid_word=settings["mid-word-chords"],
-            pdf_tags=settings["pdf-tags"],
-            edition=args.edition or recipe.edition or built,
+            settings,
+            style=recipe.style,
+            edition=edition,
             built=built,
-            title_page=settings["title-page"],
-            credits=settings["credits"],
         )
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)
