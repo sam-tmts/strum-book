@@ -1,4 +1,5 @@
-// StrumBook's FTR layout: index, songs with chord diagrams, reference page.
+// StrumBook's FTR layout: title page, index, songs with chord diagrams, reference
+// page, credits.
 // All content arrives as JSON in sys.inputs.data, from strumbook/render.py.
 // In "measure" mode it lays out the index and each song with and without diagrams,
 // and reports their page spans as <pages> metadata for render.py to read back.
@@ -199,7 +200,12 @@
   )[
     #heading(level: 1, bookmarked: not measuring, song.title) #start
     #text(10pt, fill: muted, song.artist)
-    #if song.credit != "" { block(above: 0.4em, text(9pt, fill: muted, song.credit)) }
+    #if song.credit != "" {
+      // Links to the song's entry in Credits.
+      let credit = text(9pt, fill: muted, song.credit)
+      if data.credits and not measuring { credit = link(label("credit-" + song.id), credit) }
+      block(above: 0.4em, credit)
+    }
     #for b in song.blocks { verse(b) }
     #metadata(none) #end
     #report(song.id, variant, start)
@@ -232,7 +238,7 @@
   #heading(level: 1, bookmarked: not measuring)[Index] <index>
   #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[INDEX] \
   #text(26pt, weight: "bold", data.title) \
-  #text(10pt, fill: muted, data.edition)
+  #text(10pt, fill: muted, data.count)
   #v(4mm)
   #columns(if measuring { 1 } else { data.index_columns }, gutter: 8mm, {
     let previous = none
@@ -252,6 +258,7 @@
       index-number(<reference>),
       <reference>,
     )
+    if data.credits { index-row([Credits], index-number(<credits>), <credits>) }
   })
   #report("index", "", <index>)
 ]
@@ -281,6 +288,50 @@
   )
 ]
 
+// ---------- title page ----------
+
+#let title-page() = page(margin: (x: side, top: 60mm, bottom: bottom-m))[
+  #heading(level: 1)[Title]
+  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[SONGBOOK] \
+  #text(40pt, weight: "bold", data.title) \
+  #text(14pt, fill: muted, data.edition)
+  #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
+]
+
+// ---------- credits ----------
+
+#let credits-page() = page(
+  margin: (x: side, top: 16mm, bottom: bottom-m),
+  foreground: page-furniture("credits"),
+)[
+  #heading(level: 1)[Credits] <credits>
+  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[CREDITS] \
+  #text(26pt, weight: "bold")[Words and music]
+  #v(2mm)
+  #columns(2, gutter: 8mm, for song in data.songs.filter(s => s.credit != "") [
+    #link(label("song-" + song.id), block(breakable: false, below: 3.5mm, {
+      text(11pt, weight: "bold", song.title)
+      linebreak()
+      text(9pt, fill: muted, song.credit)
+    })) #label("credit-" + song.id)
+  ])
+  #let made-with = (
+    ("StrumBook", "https://github.com/sam-tmts/strumbook", "builds this book"),
+    ("Typst", "https://typst.app", "lays out the pages"),
+    ("Atkinson Hyperlegible", "https://www.brailleinstitute.org/freefont/",
+      "the Braille Institute's typeface, easy to read at arm's length"),
+  )
+  #if data.source != none { made-with.push(("Songs", data.source, data.source)) }
+  // Kept together, so the heading never ends a page alone.
+  #block(breakable: false, {
+    group-head[Made with]
+    v(1mm)
+    for (name, url, what) in made-with [
+      #link(url)[#text(11pt, weight: "bold", name) #h(1.5mm) #text(10pt, fill: muted, what)] \
+    ]
+  })
+]
+
 // ---------- the book ----------
 
 #if measuring {
@@ -290,7 +341,9 @@
     song-page(song, false, "-without")
   }
 } else {
+  if data.title_page { title-page() }
   index-page()
   for song in data.songs { song-page(song, song.show_diagrams, "") }
   reference-page()
+  if data.credits { credits-page() }
 }

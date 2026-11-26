@@ -49,11 +49,11 @@ def test_build_writes_index_songs_in_title_order_and_reference(
     book: PdfReader,
 ) -> None:
     pages = book_map(book)
-    assert pages.titles == ["Index", *SONGS, "Reference"]
+    assert pages.titles == ["Title", "Index", *SONGS, "Reference", "Credits"]
     assert pages.pages[0] == 0
     assert pages.pages == sorted(pages.pages)
-    assert pages.page_count >= 5
-    assert pages.pages_of("Reference") == range(pages.page_count - 1, pages.page_count)
+    assert pages.page_count >= 7
+    assert len(pages.pages_of("Title")) == len(pages.pages_of("Reference")) == 1
 
 
 def test_title_defaults_to_folder_name(book: PdfReader) -> None:
@@ -77,7 +77,9 @@ def test_lyrics_are_searchable_and_chord_names_are_not(book: PdfReader) -> None:
         assert chord not in text
 
 
-def test_every_page_has_a_link_strip_of_28_equal_targets(book: PdfReader) -> None:
+def test_every_page_but_the_title_has_a_link_strip_of_28_equal_targets(
+    book: PdfReader,
+) -> None:
     pages = book_map(book)
     index = pages.first_page("Index")
     away = pages.first_page("Away In A Manger")
@@ -86,7 +88,8 @@ def test_every_page_has_a_link_strip_of_28_equal_targets(book: PdfReader) -> Non
     # Index, A, B-N (next letter with songs is O), O, P-Z (after last letter), Reference
     expected = [index, away, *[emmanuel] * 13, emmanuel, *[reference] * 11, reference]
     assert len(expected) == STRIP_CELLS
-    for number in range(pages.page_count):
+    assert split_links(book, 0) == ([], [])  # the title page has no links
+    for number in range(1, pages.page_count):
         strip, _ = split_links(book, number)
         assert len(strip) == STRIP_CELLS, f"page {number}"
         assert len({link.size for link in strip}) == 1, f"page {number}"
@@ -102,18 +105,20 @@ def test_index_entries_link_to_each_songs_first_page(book: PdfReader) -> None:
     assert [link.target for link in entries] == [
         *expected,
         pages.first_page("Reference"),
+        pages.first_page("Credits"),
     ]
 
 
 def test_song_titles_and_page_numbers_link_back_to_the_index(book: PdfReader) -> None:
     pages = book_map(book)
     index_pages = set(pages.pages_of("Index"))
+    credits = set(pages.pages_of("Credits"))  # each credit line links to Credits
     for title in SONGS:
         song_pages = pages.pages_of(title)
         for number in song_pages:
             _, others = split_links(book, number)
             assert others, f"{title} page {number} has no title/page-number link"
-            assert {link.target for link in others} <= index_pages
+            assert {link.target for link in others} - credits <= index_pages
         _, first = split_links(book, song_pages[0])
         assert len(first) >= 2, "title and page number are separate links"
 
@@ -171,7 +176,13 @@ def test_unknown_directive_is_skipped_with_a_warning(
         line.startswith("warning: ") and "frobnicate" in line
         for line in err.splitlines()
     )
-    assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+    assert book_map(PdfReader(out)).titles == [
+        "Title",
+        "Index",
+        "Synthetic Tune",
+        "Reference",
+        "Credits",
+    ]
 
 
 def test_output_folder_is_created(
@@ -191,7 +202,13 @@ def test_title_is_read_after_a_byte_order_mark(
     (songs / "tune.cho").write_text("{title:Synthetic Tune}\n[G]La la\n", "utf-8-sig")
     out = tmp_path / "book.pdf"
     assert build(songs, out, capsys=capsys)[0] == 0
-    assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+    assert book_map(PdfReader(out)).titles == [
+        "Title",
+        "Index",
+        "Synthetic Tune",
+        "Reference",
+        "Credits",
+    ]
 
 
 def test_hidden_files_are_ignored(
@@ -203,7 +220,13 @@ def test_hidden_files_are_ignored(
     out = tmp_path / "book.pdf"
     code, err = build(songs, out, capsys=capsys)
     assert code == 0, err
-    assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+    assert book_map(PdfReader(out)).titles == [
+        "Title",
+        "Index",
+        "Synthetic Tune",
+        "Reference",
+        "Credits",
+    ]
 
 
 def test_a_verse_longer_than_a_page_flows_onto_the_next(

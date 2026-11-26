@@ -22,8 +22,19 @@ _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
 
 
-def render(book: Book, output: Path, *, mid_word: str, pdf_tags: bool) -> None:
-    """Write `book` as a PDF. `mid_word` is "inline" or "above"."""
+def render(
+    book: Book,
+    output: Path,
+    *,
+    mid_word: str,
+    pdf_tags: bool,
+    edition: str,
+    source: str | None,
+    title_page: bool,
+    credits: bool,
+) -> None:
+    """Write `book` as a PDF. `mid_word` is "inline" or "above". `source` is a URL
+    for the songs, shown in Credits."""
     songs = [_song_data(s) for s in book.songs]
     reference = [
         {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
@@ -33,7 +44,11 @@ def render(book: Book, output: Path, *, mid_word: str, pdf_tags: bool) -> None:
     labels |= {d["label"] for g in reference for d in g["diagrams"]}
     data = {
         "title": book.title,
-        "edition": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
+        "count": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
+        "edition": edition,
+        "source": source,
+        "title_page": title_page,
+        "credits": credits,
         "tuning": "GCEA",
         "mid_word": mid_word,
         "songs": songs,
