@@ -44,8 +44,9 @@ flowchart LR
   the book to `layout/book.typ` as JSON data, never as Typst markup, in three offline
   passes: outline the chord names to SVG (`layout/chord-names.typ`) so they stay out
   of the searchable text, measure each song with and without diagrams and apply the
-  rules, then compile the book. The font, Atkinson Hyperlegible, is bundled in
-  `layout/fonts/`; system fonts are ignored, so books look the same everywhere.
+  rules, then compile the book: title page, index, songs, reference page and Credits.
+  The font, Atkinson Hyperlegible, is bundled in `layout/fonts/`; system fonts are
+  ignored, so books look the same everywhere.
 - **CLI** (`cli.py`) prints warnings and errors as one line each, with no traceback.
   `python -m strumbook` runs the same code.
 

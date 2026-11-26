@@ -3,10 +3,17 @@
 import argparse
 import sys
 from collections.abc import Sequence
+from datetime import date
 from importlib.metadata import version
 from pathlib import Path
 
 from strumbook.book import BuildError, read_book
+
+
+def _url(value: str) -> str:
+    if not value.startswith(("https://", "http://")):
+        raise argparse.ArgumentTypeError(f"not a web address: {value!r}")
+    return value
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -26,6 +33,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument("songs_dir", type=Path, metavar="SONGS_DIR")
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
     build.add_argument("--title", help="the book's title (default: the folder's name)")
+    today = date.today()
+    built = f"{today.day} {today:%B %Y}"
+    build.add_argument(
+        "--edition",
+        default=built,
+        help="the edition line on the title page (default: today's date)",
+    )
+    build.add_argument(
+        "--source",
+        type=_url,
+        metavar="URL",
+        help="where the songs come from, linked in Credits",
+    )
+    build.add_argument(
+        "--title-page",
+        choices=["on", "off"],
+        default="on",
+        help="include the title page (default on)",
+    )
+    build.add_argument(
+        "--credits",
+        choices=["on", "off"],
+        default="on",
+        help="include Credits (default on)",
+    )
     build.add_argument(
         "--mid-word-chords",
         choices=["inline", "above"],
@@ -56,6 +88,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output,
             mid_word=args.mid_word_chords,
             pdf_tags=args.pdf_tags == "on",
+            edition=args.edition,
+            built=built,
+            source=args.source,
+            title_page=args.title_page == "on",
+            credits=args.credits == "on",
         )
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)
