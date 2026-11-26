@@ -58,7 +58,7 @@ def parse_line(line: str) -> tuple[Segment, ...]:
 
 def read_song(path: Path) -> Song:
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")  # some Windows editors add a BOM
     except UnicodeDecodeError:
         raise SongError(f"{path.name} isn't UTF-8 text") from None
     except OSError as e:

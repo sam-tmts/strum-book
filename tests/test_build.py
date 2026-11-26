@@ -95,15 +95,14 @@ def test_every_page_has_a_link_strip_of_28_equal_targets(book: PdfReader) -> Non
 
 def test_index_entries_link_to_each_songs_first_page(book: PdfReader) -> None:
     pages = book_map(book)
-    first_pages = {pages.first_page(title) for title in SONGS}
-    index_pages = pages.pages_of("Index")
-    targets = {
-        link.target
-        for number in index_pages
-        for link in split_links(book, number)[1]
-        if link.target != pages.first_page("Reference")
-    }
-    assert targets == first_pages
+    assert len(pages.pages_of("Index")) == 1
+    _, entries = split_links(book, pages.first_page("Index"))
+    entries.sort(key=lambda link: -link.rect[3])  # top to bottom
+    expected = [pages.first_page(title) for title in SONGS]
+    assert [link.target for link in entries] == [
+        *expected,
+        pages.first_page("Reference"),
+    ]
 
 
 def test_song_titles_and_page_numbers_link_back_to_the_index(book: PdfReader) -> None:
@@ -173,6 +172,74 @@ def test_unknown_directive_is_skipped_with_a_warning(
         for line in err.splitlines()
     )
     assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+
+
+def test_output_folder_is_created(
+    carols: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "new" / "book.pdf"
+    code, err = build(carols, out, capsys=capsys)
+    assert code == 0, err
+    assert out.exists()
+
+
+def test_title_is_read_after_a_byte_order_mark(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    songs = tmp_path / "songs"
+    songs.mkdir()
+    (songs / "tune.cho").write_text("{title:Synthetic Tune}\n[G]La la\n", "utf-8-sig")
+    out = tmp_path / "book.pdf"
+    assert build(songs, out, capsys=capsys)[0] == 0
+    assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+
+
+def test_hidden_files_are_ignored(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    songs = tmp_path / "songs"
+    write_song(songs, "tune", "{title:Synthetic Tune}\n[G]La la\n")
+    (songs / "._tune.cho").write_bytes(b"\x00\x05\x16\x07\xff")  # macOS metadata
+    out = tmp_path / "book.pdf"
+    code, err = build(songs, out, capsys=capsys)
+    assert code == 0, err
+    assert book_map(PdfReader(out)).titles == ["Index", "Synthetic Tune", "Reference"]
+
+
+def test_a_verse_longer_than_a_page_flows_onto_the_next(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    songs = tmp_path / "songs"
+    lines = "".join(f"[G]Line {n} of a long verse\n" for n in range(1, 81))
+    write_song(songs, "long", "{title:Long Tune}\n" + lines)
+    out = tmp_path / "book.pdf"
+    assert build(songs, out, capsys=capsys)[0] == 0
+    reader = PdfReader(out)
+    song_pages = book_map(reader).pages_of("Long Tune")
+    assert len(song_pages) >= 2
+    for number in song_pages:
+        assert "of a long verse" in reader.pages[number].extract_text()
+    assert "Line 80 of" in reader.pages[song_pages[-1]].extract_text()
+
+
+def test_renderer_drops_diagrams_by_rule_1(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The diagram column is headed "GCEA" in real text, so it marks the column.
+    songs = tmp_path / "songs"
+    nine = "[C]a [D]b [E]c [F]d [G]e [A]f [B]g [Am]h [Dm]i\n"
+    verses = "\n".join(nine * 4 for _ in range(12))
+    write_song(songs, "long", "{title:Long Tune}\n" + verses)
+    write_song(songs, "short", "{title:Short Tune}\n[C]a [F]b [G]c\n")
+    out = tmp_path / "book.pdf"
+    assert build(songs, out, capsys=capsys)[0] == 0
+    reader = PdfReader(out)
+    pages = book_map(reader)
+    assert len(pages.pages_of("Long Tune")) > 1
+    for number in pages.pages_of("Long Tune"):
+        assert "GCEA" not in reader.pages[number].extract_text()
+    short = pages.first_page("Short Tune")
+    assert "GCEA" in reader.pages[short].extract_text()
 
 
 def _only_readme(folder: Path) -> Path:

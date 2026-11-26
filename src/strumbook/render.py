@@ -10,7 +10,7 @@ from pathlib import Path
 
 import typst
 
-from strumbook.book import Book, BookSong, BuildError, show_diagrams
+from strumbook.book import Book, BookSong, BuildError, diagram_columns, show_diagrams
 
 LAYOUT = Path(__file__).parent / "layout"
 _OPTIONS = {
@@ -60,6 +60,7 @@ def render(book: Book, output: Path, *, mid_word: str, pdf_tags: bool) -> None:
     except typst.TypstError as e:
         raise BuildError(f"Typst couldn't lay out the book: {e.message}") from None
     try:
+        output.parent.mkdir(parents=True, exist_ok=True)
         output.write_bytes(pdf)
     except OSError as e:
         raise BuildError(f"can't write {output}: {e.strerror}") from None
@@ -92,6 +93,7 @@ def _song_data(book_song: BookSong) -> dict:
         "letter": book_song.letter,
         "blocks": blocks,
         "diagrams": [_diagram_data(d) for d in book_song.diagrams],
+        "diagram_columns": diagram_columns(len(book_song.diagrams)),
     }
 
 

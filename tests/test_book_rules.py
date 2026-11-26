@@ -1,8 +1,23 @@
-"""The diagram rules, chord grouping and the chord table."""
+"""The diagram rules, chord grouping, song order and the chord table."""
+
+from pathlib import Path
 
 import pytest
-from strumbook.book import group_diagrams, show_diagrams
+
+from strumbook.book import group_diagrams, read_book, show_diagrams
 from strumbook.chords import shape
+
+
+def test_songs_sort_by_title_ignoring_case_and_accents(tmp_path: Path) -> None:
+    for n, title in enumerate(
+        ["banana", "Éclair", "Apple", "10 Green Bottles", "cherry"]
+    ):
+        (tmp_path / f"{n}.cho").write_text(f"{{title:{title}}}\nLa\n", "utf-8")
+    book = read_book(tmp_path)
+    assert [s.song.title for s in book.songs] == [
+        "10 Green Bottles", "Apple", "banana", "cherry", "Éclair",
+    ]  # fmt: skip
+    assert [s.letter for s in book.songs] == ["#", "A", "B", "C", "E"]
 
 
 @pytest.mark.parametrize(

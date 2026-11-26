@@ -64,6 +64,11 @@ def show_diagrams(diagrams: int, pages_with: int, pages_without: int) -> bool:
     return not (too_many or fits_without)
 
 
+def diagram_columns(diagrams: int) -> int:
+    """One column of diagrams for up to MAX_DIAGRAMS, two above that."""
+    return 0 if diagrams == 0 else 1 if diagrams <= MAX_DIAGRAMS else 2
+
+
 def index_letter(title: str) -> str:
     first = unicodedata.normalize("NFKD", title.strip()[:1])[:1].upper()
     return first if "A" <= first <= "Z" else "#"
@@ -73,7 +78,8 @@ def read_book(folder: Path, title: str | None = None) -> Book:
     """Read every .cho file in `folder`. The title defaults to the folder's name."""
     if not folder.is_dir():
         raise BuildError(f"no such folder: {folder}")
-    paths = sorted(folder.glob("*.cho"))
+    # Skip hidden files, such as the "._Song.cho" files macOS leaves on USB sticks.
+    paths = sorted(p for p in folder.glob("*.cho") if not p.name.startswith("."))
     if not paths:
         raise BuildError(f"no .cho files in {folder}")
 

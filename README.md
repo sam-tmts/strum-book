@@ -28,9 +28,13 @@ to the index, each letter and the reference page. Options:
 - `--pdf-tags on|off`: tags help screen readers but make the PDF about twice the
   size (about 30 MB for 500 songs); `off` gives a smaller file.
 
-StrumBook warns about chords it has no diagram for and ChordPro directives it skips.
-It needs no network access. It installs on macOS, Linux and Windows on x64, but not on
-Windows on ARM yet: its Typst renderer has no package for it.
+To avoid page turns, a song drops its diagram column if the diagrams would push it onto
+a second page, or if it has more than 8 diagrams and needs more than one page anyway.
+The chord names in the lyrics always stay. StrumBook warns about chords it has no
+diagram for and ChordPro directives it skips.
+
+It needs no network access. It installs on macOS, Linux and Windows (x64), but not yet
+on Windows on ARM: its Typst renderer has no package for it.
 
 ## How work happens
 

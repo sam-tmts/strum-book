@@ -67,9 +67,12 @@
 })
 
 #let block-gap = if float-mid { 2em } else { 1.2em }
+// A verse or chorus stays on one page, unless it's too long to fit on one.
+#let max-unbroken-lines = 16
 #let verse(b) = {
   let body = b.lines.map(lyric-line).join()
-  block(breakable: false, above: block-gap, below: block-gap, if b.chorus {
+  let breakable = b.lines.len() > max-unbroken-lines
+  block(breakable: breakable, above: block-gap, below: block-gap, if b.chorus {
     block(stroke: (left: 2pt + rule), inset: (left: 10pt, y: 2pt), body)
   } else { body })
 }
@@ -163,9 +166,8 @@
   let start = label("song-" + key)
   let end = label("end-" + key)
   let back = label("index-" + song.id)
-  let n = song.diagrams.len()
-  let cols = if n > 8 { 2 } else { 1 }
-  let dw = if show-diagrams and n > 0 { cols * 15mm + (cols - 1) * 2mm + 7mm } else { 0mm }
+  let cols = song.diagram_columns
+  let dw = if show-diagrams and cols > 0 { cols * diagram-w + (cols - 1) * 2mm + 7mm } else { 0mm }
   page(
     margin: (left: side, right: side + dw, top: top-m, bottom: bottom-m),
     header: context {
