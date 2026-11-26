@@ -25,6 +25,7 @@ AWAY_T = "Away In A Manger"
 EMMANUEL_T = "O Come, O Come, Emmanuel"
 BETHLEHEM_T = "O Little Town Of Bethlehem"
 SPARES = "Spares and encores"
+CAROLS_T = [AWAY_T, EMMANUEL_T, BETHLEHEM_T]
 SETLIST = 'style = "setlist"'
 
 
@@ -373,11 +374,6 @@ def test_a_songbook_can_turn_index_navigation_and_reference_off(
         book = write_book(tmp_path)
         flags = ["--index", "off", "--navigation", "off", "--reference", "off"]
     reader = built(book, tmp_path / "book.pdf", *flags, capsys=capsys)
-    assert book_map(reader).titles == [
-        "Title",
-        *book_map(reader).titles[1:-1],
-        "Credits",
-    ]
     assert book_map(reader).titles == ["Title", *_carols(), "Credits"]
     assert all(split_links(reader, n)[0] == [] for n in range(len(reader.pages)))
     assert warning_lines(capsys.readouterr().err) == []
@@ -767,3 +763,128 @@ def test_a_failed_setlist_build_leaves_an_existing_pdf_alone(
     assert code == 1, err
     assert "No Such Song" in err
     assert out.read_bytes() == b"earlier build"
+
+
+# Partial songbook strips.
+
+
+def strip_of_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> list[int]:
+    reader = built(
+        write_book(tmp_path, name="d.book.toml"), tmp_path / "d.pdf", capsys=capsys
+    )
+    return strip_targets(reader, 1)
+
+
+@pytest.mark.parametrize("where", ["build", "command line"])
+def test_a_songbook_without_an_index_has_a_strip_without_its_cell(
+    where: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    default = strip_of_default(tmp_path, capsys)
+    if where == "build":
+        book, flags = write_book(tmp_path, build="index = false"), []
+    else:
+        book, flags = write_book(tmp_path), ["--index", "off"]
+    reader = built(book, tmp_path / "b.pdf", *flags, capsys=capsys)
+    pages = book_map(reader)
+    assert "Index" not in pages.titles
+    credits = set(pages.pages_of("Credits"))
+    for n in pages_after_title(reader):
+        strip, _ = split_links(reader, n)
+        assert len(strip) == 27, f"page {n}"
+        assert len({link.size for link in strip}) == 1
+        assert [link.target for link in strip] == [t - 1 for t in default[1:]], (
+            f"page {n}"
+        )  # the index page is gone
+    assert strip_targets(reader, 1)[-1] == pages.first_page("Reference")
+    for title in CAROLS_T:
+        for n in pages.pages_of(title):
+            others = {link.target for link in split_links(reader, n)[1]}
+            assert others <= credits, f"{title} page {n}"
+
+
+def test_a_songbook_without_reference_ends_its_strip_on_the_last_song(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    default = strip_of_default(tmp_path, capsys)
+    book = write_book(tmp_path, build="reference = false")
+    reader = built(book, tmp_path / "b.pdf", capsys=capsys)
+    pages = book_map(reader)
+    assert "Reference" not in pages.titles
+    last = pages.first_page(BETHLEHEM_T)
+    for n in pages_after_title(reader):
+        strip, _ = split_links(reader, n)
+        assert len(strip) == 27, f"page {n}"
+        assert len({link.size for link in strip}) == 1
+        targets = [link.target for link in strip]
+        assert targets[0] == pages.first_page("Index")
+        assert targets[1:16] == default[1:16]  # A to O
+        assert targets[16:] == [last] * 11  # P to Z
+
+
+def test_a_songbook_without_index_or_reference_has_just_a_to_z(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    default = strip_of_default(tmp_path, capsys)
+    book = write_book(tmp_path, build="index = false\nreference = false")
+    reader = built(book, tmp_path / "b.pdf", capsys=capsys)
+    for n in pages_after_title(reader):
+        strip, _ = split_links(reader, n)
+        assert len(strip) == 26, f"page {n}"
+        assert len({link.size for link in strip}) == 1
+    pages = book_map(reader)
+    targets = strip_targets(reader, 1)
+    assert targets[:15] == [t - 1 for t in default[1:16]]
+    assert targets[15:] == [pages.first_page(BETHLEHEM_T)] * 11
+
+
+# A set list with pick and spares.
+
+
+def test_a_picked_list_with_spares_has_a_two_cell_strip(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    songs = (
+        f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"\nspares = ["{BETHLEHEM}"]'
+    )
+    book = setlist(tmp_path, songs, build="navigation = true")
+    reader = built(book, tmp_path / "g.pdf", capsys=capsys)
+    pages = book_map(reader)
+    expected = [pages.first_page("Running order"), pages.first_page(SPARES)]
+    for n in pages_after_title(reader):
+        strip, _ = split_links(reader, n)
+        assert [link.target for link in strip] == expected, f"page {n}"
+        assert len({link.size for link in strip}) == 1
+
+
+# Bad values and error wording.
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        'index = "yes"',
+        "navigation = 1",
+        'reference = "off"',
+        'set-breaks = "on"',
+    ],
+)
+def test_a_bad_value_for_a_new_build_key_is_an_error_naming_the_key(
+    line: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "gig.pdf"
+    code, err = run(setlist(tmp_path, build=line), out, capsys=capsys)
+    assert_clean_error(code, err, out, line.split(" ")[0])
+
+
+def test_songbook_on_the_command_line_rejects_a_book_with_sets(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "gig.pdf"
+    code, err = run(setlist(tmp_path), out, "--style", "songbook", capsys=capsys)
+    assert_clean_error(code, err, out, "set", "songbook")
+
+
+def test_a_mistyped_order_in_a_setlist_names_the_key_and_the_valid_value(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fails(tmp_path, f'pick = ["{AWAY}"]\norder = "listd"', capsys, "order", "listed")

@@ -56,7 +56,8 @@ def links_on(reader: PdfReader, page_number: int) -> list[Link]:
 def split_links(reader: PdfReader, page_number: int) -> tuple[list[Link], list[Link]]:
     """Return (strip links left to right, all other links) for a page.
 
-    The strip is the 28 equal-sized links in the bottom band of the page.
+    The strip is the equal-sized links in the bottom band of the page. Its cell
+    count depends on the style and options.
     """
     height = float(reader.pages[page_number].mediabox.height)
     links = links_on(reader, page_number)
