@@ -44,6 +44,16 @@ ignores):
 uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 ```
 
+`make christmas` builds the full book from all 28 carols in
+[pathawks/Christmas-Songs](https://github.com/pathawks/Christmas-Songs), pinned to a
+commit in the `Makefile`. It clones them into `collections/christmas-songs/` (git
+ignores `collections/`, so nothing is committed), writes
+`output/christmas-carols.pdf` and prints the number of warnings, which should be 0.
+It needs network access to github.com, so CI doesn't run it. After the pin changes,
+delete `collections/christmas-songs/` so the next run clones afresh. In a Claude Code sandbox
+the clone fails, because the sandbox won't let git write a `.git/config` inside the
+project: run it in your own terminal.
+
 The layout lives in `src/strumbook/layout/book.typ`; the chord shapes in
 `src/strumbook/chords.json` (frets per string, G C E A).
 

@@ -34,7 +34,7 @@ class Diagram:
 class BookSong:
     song: Song
     id: str
-    letter: str  # index group: A–Z, or "#" for titles that don't start with one
+    letter: str  # index group: A–Z, or "#" for sort titles that don't start with one
     diagrams: tuple[Diagram, ...]
 
 
@@ -103,14 +103,16 @@ def read_book(folder: Path, title: str | None = None) -> Book:
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
         warnings.append(f"skipped unknown directive {{{name}}} in {where}")
 
-    songs.sort(key=lambda s: (index_letter(s[0].title), s[0].title.casefold(), s[1]))
+    songs.sort(
+        key=lambda s: (index_letter(s[0].sort_title), s[0].sort_title.casefold(), s[1])
+    )
     return Book(
         title=folder.resolve().name if title is None else title,
         songs=tuple(
             BookSong(
                 song,
                 f"s{i}",
-                index_letter(song.title),
+                index_letter(song.sort_title),
                 tuple(group_diagrams(song.chords)),
             )
             for i, (song, _) in enumerate(songs)

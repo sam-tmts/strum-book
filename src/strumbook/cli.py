@@ -60,6 +60,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    count = len(book.songs)
-    print(f"Wrote {args.output}: {count} song{'s' if count != 1 else ''}")
+    songs, warnings = len(book.songs), len(book.warnings)
+    print(
+        f"Wrote {args.output}: {songs} song{'s' if songs != 1 else ''}, "
+        f"{warnings} warning{'s' if warnings != 1 else ''}"
+    )
     return 0
