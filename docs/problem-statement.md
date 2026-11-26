@@ -112,12 +112,11 @@ The first goal needs only one collection, but its design shouldn't rule this out
 
 Tried with ChordPro 6.101 in November 2026.
 
-- **Use it as the renderer.** It's open source, actively maintained and runs on Windows,
-  macOS and Linux. It already builds a songbook PDF from a folder of `.cho` files, with
-  a cover, tappable contents pages (by title, and by title with artist) and bookmarks.
-  That leaves mainly a tablet style, a baritone instrument definition, the importer, a
-  thin wrapper that builds the books, and whatever ChordPro can't do from the Direction
-  list above (still to check).
+- **Renderer: Typst, not ChordPro.** We first planned to use ChordPro as the renderer:
+  it's open source, maintained, and already builds a songbook PDF with tappable contents
+  and bookmarks. But most of the page designs would have stretched its configuration, so
+  StrumBook now draws the pages itself with Typst and keeps ChordPro as the song format
+  ([ADR-0002](adr/0002-chordpro-format-typst-renderer.md), spike #3).
 - **Its defaults suit print, not tablets.** Every song starts on a right-hand page, so
   blank filler pages appear (18 of 61 pages in our test). Turn that off with
   `pdf.songbook.align-songs=false`.

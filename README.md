@@ -4,7 +4,8 @@ Tools for building songbooks for ukulele groups and bands from collections of Ch
 songs: tablet-friendly PDFs with a tappable index, searchable text and chord diagrams
 for each instrument. The [problem statement](docs/problem-statement.md) explains why.
 
-**Status: early development.** Only `strumbook --help` and `--version` work so far.
+**Status: early development.** It builds a book from one folder of songs, in one
+layout, with GCEA chord diagrams.
 
 ## Try it
 
@@ -12,8 +13,28 @@ You need [uv](https://docs.astral.sh/uv/) and git. From the repository root:
 
 ```sh
 uv sync --locked
-uv run --locked strumbook --help
+uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 ```
+
+`strumbook build SONGS_DIR -o BOOK.pdf` reads every `.cho` file in the folder and
+writes a PDF for a tablet: an index, the songs sorted by title with chord diagrams down
+the side, and a chord reference page. Every page has a strip of links along the bottom
+to the index, each letter and the reference page. Options:
+
+- `--title TEXT`: the book's title (default: the folder's name).
+- `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
+  drawn inline by default, which splits the word for search. `above` floats it over
+  the word instead, so search finds the whole word.
+- `--pdf-tags on|off`: tags help screen readers but make the PDF about twice the
+  size (about 30 MB for 500 songs); `off` gives a smaller file.
+
+To avoid page turns, a song drops its diagram column if the diagrams would push it onto
+a second page, or if it has more than 8 diagrams and needs more than one page anyway.
+The chord names in the lyrics always stay. StrumBook warns about chords it has no
+diagram for and ChordPro directives it skips.
+
+It needs no network access. It installs on macOS, Linux and Windows (x64), but not yet
+on Windows on ARM: its Typst renderer has no package for it.
 
 ## How work happens
 
@@ -27,4 +48,24 @@ holds only the tool and public-domain test songs.
 
 ## Licence
 
-[MIT](LICENSE). The licence covers the software, not any songs it is used with.
+[MIT](LICENSE). The licence covers the software, not any songs it is used with. The
+bundled Atkinson Hyperlegible font has its own licence, the
+[SIL Open Font License](src/strumbook/layout/fonts/OFL.txt).
+
+## Thanks
+
+StrumBook builds on the great work of these projects:
+
+| Project | What it does for StrumBook |
+|---------|----------------------------|
+| [Typst](https://typst.app) | Lays out every page of the book and writes the PDF: searchable text, links and bookmarks. |
+| [typst-py](https://github.com/messense/typst-py) | Bundles the Typst compiler as a Python package, so installing StrumBook needs nothing else. |
+| [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) | The Braille Institute's typeface, designed to be easy to tell letters apart. It keeps lyrics clear on a tablet at arm's length. |
+| [ChordPro](https://www.chordpro.org) | The song format: lyrics with chords inline, which StrumBook reads. |
+| [Christmas Songs](https://github.com/pathawks/Christmas-Songs) | Public-domain carols in ChordPro, used as test songs. |
+| [uv](https://docs.astral.sh/uv/) | Sets up the Python environment and pins every dependency. |
+| [pytest](https://pytest.org) | Runs the tests. |
+| [pypdf](https://github.com/py-pdf/pypdf) | Lets the tests read the books they build: text, links and bookmarks. |
+| [Ruff](https://docs.astral.sh/ruff/) | Checks and formats the code. |
+
+The exact versions are pinned in [`uv.lock`](uv.lock).

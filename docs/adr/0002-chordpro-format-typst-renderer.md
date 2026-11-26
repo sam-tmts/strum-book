@@ -21,8 +21,11 @@ to install for groups with limited technical skills, on Windows and macOS.
 ## Consequences
 
 StrumBook owns more layout code, but every design idea can be built directly. ChordPro
-the program is no longer a dependency. Chord diagram data must come from somewhere: to
-be settled by the first Typst spike.
+the program is no longer a dependency. Chord diagram data comes from StrumBook's own
+small chord table (`src/strumbook/chords.json`), and StrumBook's Typst code draws the
+diagrams (spike #3: ChordPro's table lacks sharps and slash chords, and the Typst
+packages' shapes are poor for ukulele). Chord names are drawn as outlines so they stay
+out of the PDF's searchable text.
 
 ## Alternatives considered
 

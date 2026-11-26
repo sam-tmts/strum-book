@@ -18,7 +18,8 @@ def test_help_describes_current_capability(capsys: pytest.CaptureFixture[str]) -
     output = capsys.readouterr()
     assert "usage: strumbook" in output.out
     assert "--version" in output.out
-    assert "not implemented yet" in output.out
+    assert "build" in output.out
+    assert "not implemented yet" not in output.out
     assert output.err == ""
 
 
@@ -43,14 +44,29 @@ def test_no_arguments_shows_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "usage: strumbook" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("argument", ["build", "--not-a-real-option"])
-def test_unknown_arguments_fail(
-    argument: str, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_unknown_arguments_fail(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
-        main([argument])
+        main(["--not-a-real-option"])
     assert exc.value.code == 2
     assert "unrecognized arguments" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["build"],
+        ["build", "songs"],
+        ["build", "songs", "-o", "book.pdf", "--mid-word-chords", "sideways"],
+        ["build", "songs", "-o", "book.pdf", "--pdf-tags", "maybe"],
+    ],
+)
+def test_build_usage_errors(
+    argv: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(argv)
+    assert exc.value.code == 2
+    assert "usage:" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("argument", ["--help", "--version"])

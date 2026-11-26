@@ -1,0 +1,292 @@
+// StrumBook's FTR layout: index, songs with chord diagrams, reference page.
+// All content arrives as JSON in sys.inputs.data, from strumbook/render.py.
+// In "measure" mode it lays out the index and each song with and without diagrams,
+// and reports their page spans as <pages> metadata for render.py to read back.
+#let data = json(bytes(sys.inputs.data))
+#let measuring = sys.inputs.at("mode", default: "book") == "measure"
+
+#let red = rgb("#b3261e")
+#let ink = rgb("#202124")
+#let muted = rgb("#6b7280")
+#let faint = rgb("#c9ccd1")
+#let rule = rgb("#e3e5e8")
+
+#let body-size = 13pt
+#let page-w = 210mm
+#let side = 16mm
+#let top-m = 30mm
+#let bottom-m = 26mm
+#let strip-h = 11mm
+#let cells = 28 // index, A–Z, reference
+
+#set document(title: data.title)
+#set page(paper: "a4")
+#let float-mid = data.mid_word == "above"
+#set text(font: "Atkinson Hyperlegible", size: body-size, fill: ink, lang: "en")
+#set par(leading: 0.65em, spacing: if float-mid { 1.15em } else { 0.65em })
+// Headings exist for bookmarks and link targets; titles are drawn by hand.
+#show heading: none
+
+// Chord names are outlined SVGs, so they never enter the text layer. Python
+// supplies each one's size, which saves Typst measuring them. A shared diagram's
+// label ("Am · Am/C · Am/E") shrinks to fit the diagram's width.
+#let diagram-w = 15mm
+#let images(style, max-w) = data.chords.at(style).pairs().map(((name, f)) => (
+  name,
+  image(bytes(f.svg), format: "svg", width: calc.min(f.w * 1pt, max-w)),
+)).to-dict()
+#let inline-images = images("inline", page-w)
+#let label-images = images("label", diagram-w)
+// Inline SVGs run from cap height to baseline at 9.5pt, so their height gives the
+// font's cap-height ratio; the lyric's capitals are that ratio of the body size.
+#let lyric-cap = if data.chords.inline.len() > 0 {
+  body-size * data.chords.inline.values().first().h / 9.5
+} else { 0pt }
+
+// ---------- song text ----------
+
+// Chord tops line up with the lyric's capitals. A chord inside a word
+// ("a[D]wakes") sits inline like the rest, which splits the word for search, or
+// with --mid-word-chords above floats over the join, so the word stays whole.
+#let inline-chord(name, mid) = {
+  let f = data.chords.inline.at(name)
+  let img = inline-images.at(name)
+  if mid and float-mid {
+    box(width: 0pt, place(bottom + center, dy: -lyric-cap - 1.5pt, img))
+  } else {
+    box(baseline: -(lyric-cap - f.h * 1pt), img)
+    h(0.18em)
+  }
+}
+
+#let lyric-line(segments) = par(hanging-indent: 1.2em, {
+  for s in segments {
+    if s.chord != "" { inline-chord(s.chord, s.mid) }
+    s.text
+  }
+})
+
+#let block-gap = if float-mid { 2em } else { 1.2em }
+// A verse or chorus stays on one page, unless it's too long to fit on one.
+#let max-unbroken-lines = 16
+#let verse(b) = {
+  let body = b.lines.map(lyric-line).join()
+  let breakable = b.lines.len() > max-unbroken-lines
+  block(breakable: breakable, above: block-gap, below: block-gap, if b.chorus {
+    block(stroke: (left: 2pt + rule), inset: (left: 10pt, y: 2pt), body)
+  } else { body })
+}
+
+// ---------- chord diagrams ----------
+
+#let diagram(frets) = {
+  let sx = 3.6mm
+  let fy = 3.6mm
+  let rows = 5
+  let r = 1.3mm
+  box(width: 3 * sx, height: rows * fy, {
+    for i in range(4) {
+      place(line(start: (i * sx, 0pt), end: (i * sx, rows * fy), stroke: 0.6pt + muted))
+    }
+    for j in range(1, rows + 1) {
+      place(line(start: (0pt, j * fy), end: (3 * sx, j * fy), stroke: 0.6pt + muted))
+    }
+    place(line(start: (0pt, 0pt), end: (3 * sx, 0pt), stroke: 2.2pt + ink))
+    for (i, f) in frets.enumerate() {
+      if f > 0 {
+        place(dx: i * sx - r, dy: (f - 0.5) * fy - r, circle(radius: r, fill: ink))
+      }
+    }
+  })
+}
+
+#let chord-box(d) = box(width: diagram-w, align(center, stack(
+  spacing: 2mm,
+  label-images.at(d.label),
+  diagram(d.frets),
+)))
+
+#let diagram-column(song, cols) = stack(
+  spacing: 3mm,
+  align(center, text(7.5pt, fill: muted, tracking: 0.12em, data.tuning)),
+  grid(columns: cols, column-gutter: 2mm, row-gutter: 4.5mm, ..song.diagrams.map(chord-box)),
+)
+
+// ---------- link strip ----------
+
+#let index-icon = stack(spacing: 1.1mm, ..range(3).map(_ => line(length: 4.2mm, stroke: 1.2pt + ink)))
+#let ref-icon = grid(columns: (1.3mm,) * 3, rows: (1.3mm,) * 3, stroke: 0.8pt + ink)
+
+// Every cell is the same size. Empty letters are grey and jump to the next letter
+// with songs, or to the reference page after the last one.
+#let strip(current) = {
+  let w = (page-w - 2 * side) / cells
+  let cell(body, active) = box(width: w, height: strip-h, {
+    place(center + horizon, body)
+    if active { place(bottom + center, rect(width: 75%, height: 2pt, fill: red)) }
+  })
+  let target(t) = if t == "ref" { <reference> } else { label("song-" + t) }
+  grid(
+    columns: (w,) * cells,
+    link(<index>, cell(index-icon, current == "index")),
+    ..data.letters.map(l => {
+      let active = current == l.letter
+      let colour = if active { ink } else if l.has { muted } else { faint }
+      link(target(l.target), cell(
+        text(10.5pt, weight: if active { "bold" } else { "regular" }, fill: colour, l.letter),
+        active,
+      ))
+    }),
+    link(<reference>, cell(ref-icon, current == "ref")),
+  )
+}
+
+// The page number, top right, links back to the song's index entry (`back`).
+#let page-furniture(current, back: none) = {
+  let number = text(15pt, weight: "bold", fill: red, context counter(page).display())
+  if back != none and not measuring { number = link(back, number) }
+  place(top + right, dx: -side, dy: 13mm, number)
+  if not measuring { place(bottom + left, dx: side, dy: -5mm, strip(current)) }
+}
+
+// Reports a page span to render.py in measure mode.
+#let report(id, variant, start) = if measuring {
+  context [#metadata((
+    id: id,
+    variant: variant,
+    first: locate(start).page(),
+    last: here().page(),
+  )) <pages>]
+}
+
+// ---------- song page ----------
+
+#let song-page(song, show-diagrams, variant) = {
+  let key = song.id + variant
+  let start = label("song-" + key)
+  let end = label("end-" + key)
+  let back = label("index-" + song.id)
+  let cols = song.diagram_columns
+  let dw = if show-diagrams and cols > 0 { cols * diagram-w + (cols - 1) * 2mm + 7mm } else { 0mm }
+  page(
+    margin: (left: side, right: side + dw, top: top-m, bottom: bottom-m),
+    header: context {
+      let first = here().page() == locate(start).page()
+      let title = text(24pt, weight: "bold", song.title)
+      block(width: page-w - 2 * side - 16mm, {
+        if measuring { title } else { link(back, title) }
+        if not first { text(14pt, fill: muted)[ (continued)] }
+      })
+    },
+    footer: context {
+      if here().page() < locate(end).page() {
+        text(11pt, weight: "bold", fill: red)[Continues on page #(here().page() + 1) →]
+      }
+    },
+    foreground: page-furniture(song.letter, back: back),
+    // Drawn as the background, so the diagrams repeat on continuation pages.
+    background: if dw > 0mm {
+      place(top + right, dx: -side, dy: top-m + 1mm, box(
+        width: dw - 3mm,
+        stroke: (left: 0.5pt + rule),
+        inset: (left: 4mm),
+        diagram-column(song, cols),
+      ))
+    },
+  )[
+    #heading(level: 1, bookmarked: not measuring, song.title) #start
+    #text(10pt, fill: muted, song.artist)
+    #for b in song.blocks { verse(b) }
+    #metadata(none) #end
+    #report(song.id, variant, start)
+  ]
+}
+
+// ---------- index ----------
+
+#let index-number(target) = text(fill: muted, if measuring { "000" } else {
+  context counter(page).at(target).first()
+})
+
+// The whole row, padding included, is the tap target.
+#let index-row(body, number, target) = {
+  let row = block(
+    width: 100%,
+    inset: (y: 2.6mm),
+    stroke: (bottom: 0.5pt + rule),
+    grid(columns: (1fr, auto), column-gutter: 3mm, body, number),
+  )
+  if measuring { row } else { link(target, row) }
+}
+
+#let group-head(t) = block(above: 5mm, below: 0mm, text(10pt, weight: "bold", fill: red, t))
+
+#let index-page() = page(
+  margin: (x: side, top: 16mm, bottom: bottom-m),
+  foreground: page-furniture("index"),
+)[
+  #heading(level: 1, bookmarked: not measuring)[Index] <index>
+  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[INDEX] \
+  #text(26pt, weight: "bold", data.title) \
+  #text(10pt, fill: muted, data.edition)
+  #v(4mm)
+  #columns(if measuring { 1 } else { data.index_columns }, gutter: 8mm, {
+    let previous = none
+    for song in data.songs {
+      if song.letter != previous { group-head(song.letter) }
+      previous = song.letter
+      let target = label("song-" + song.id)
+      [#index-row(
+        [#song.title #h(1.5mm) #text(10pt, fill: muted, song.artist)],
+        index-number(target),
+        target,
+      ) #label("index-" + song.id)]
+    }
+    group-head[Reference]
+    index-row(
+      [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning)],
+      index-number(<reference>),
+      <reference>,
+    )
+  })
+  #report("index", "", <index>)
+]
+
+// ---------- reference ----------
+
+#let reference-page() = page(
+  margin: (x: side, top: 16mm, bottom: bottom-m),
+  foreground: page-furniture("ref"),
+)[
+  #heading(level: 1)[Reference] <reference>
+  #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[REFERENCE] \
+  #text(26pt, weight: "bold")[Chord shapes] \
+  #text(10pt, fill: muted)[Standard tuning #data.tuning]
+  #v(6mm)
+  #grid(
+    columns: 2,
+    column-gutter: 10mm,
+    row-gutter: 7mm,
+    ..data.reference.map(g => grid(
+      columns: (10mm, auto, auto, auto),
+      column-gutter: 2mm,
+      align: horizon,
+      text(20pt, weight: "bold", fill: muted, g.root),
+      ..g.diagrams.map(chord-box),
+    ))
+  )
+]
+
+// ---------- the book ----------
+
+#if measuring {
+  index-page()
+  for song in data.songs {
+    song-page(song, true, "-with")
+    song-page(song, false, "-without")
+  }
+} else {
+  index-page()
+  for song in data.songs { song-page(song, song.show_diagrams, "") }
+  reference-page()
+}

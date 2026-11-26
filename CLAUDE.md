@@ -45,8 +45,9 @@ real complexity, name the simpler alternative and let Sam choose.
 4. Commit, then give `reviewer` the issue, the full diff (`git diff origin/main...HEAD`)
    and the real `make check` output. Fix what matters; report anything unresolved.
 5. Push with `git push -u origin HEAD:refs/heads/build/N-slug` and open a PR from the
-   template. If the change affects what a book looks like, build a sample with
-   public-domain songs and attach the PDF so Sam can try it on a tablet.
+   template. CI builds a sample book from the fixture carols on every run that passes
+   its checks. If the change affects what a book looks like, name the sample
+   (`strumbook-carols-prN-<sha>.pdf`) in the PR and say what to look at in it.
 
 Never merge, release or push to `main`. Never claim a test, review or result that
 didn't happen.
@@ -67,7 +68,8 @@ delete the branch.
   only public-domain songs. Never put private songs, song lists or books made from
   them in commits, issues or PRs.
 - **Dependencies:** each new package needs Sam's OK first: name, version, source and
-  why. Pin it in `pyproject.toml` and `uv.lock`.
+  why. Pin it in `pyproject.toml` and `uv.lock`, and thank it in the README's Thanks
+  table, as for anything else we build on (fonts, fixture songs).
 - **Guardrails:** don't change `.claude/`, `.github/workflows/` or `SECURITY.md`
   unless the issue covers it. Don't work around the sandbox; if a command needs a new
   host or path, say so.

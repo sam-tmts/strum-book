@@ -36,3 +36,37 @@ jobs:
           uv pip install --python .work/package-smoke/bin/python --no-deps dist/*.whl
           .work/package-smoke/bin/strumbook --help
           .work/package-smoke/bin/strumbook --version
+      # A sample book for trying on a tablet. Public-domain fixtures only: never
+      # build private songs here, as anyone signed in to GitHub can download it.
+      - name: Sample book
+        id: sample
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          short="${SHA::7}"
+          if [ -n "$PR" ]; then
+            label="PR #$PR, $short"
+            file="output/strumbook-carols-pr$PR-$short.pdf"
+          else
+            label="$short"
+            file="output/strumbook-carols-$short.pdf"
+          fi
+          uv run --locked strumbook build tests/fixtures/carols -o "$file" \
+            --title "StrumBook sample: carols ($label)"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+      - name: Upload the sample book
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ steps.sample.outputs.file }}
+          archive: false # the iPad opens the PDF directly, no unzipping
+          retention-days: 30
+          if-no-files-found: error
+          overwrite: true # so re-running the job doesn't fail on the same name
+      - name: Link the sample book in the job summary
+        env:
+          FILE: ${{ steps.sample.outputs.file }}
+          URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          echo "Sample book: [${FILE#output/}]($URL)" >> "$GITHUB_STEP_SUMMARY"
