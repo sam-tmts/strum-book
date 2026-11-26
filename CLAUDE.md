@@ -62,8 +62,7 @@ A `spike/N-slug` answers a question within the limits the issue sets. The issue'
 questions and evidence are the test plan; throwaway scripts in `.work/` may gather the
 evidence. Record findings, evidence and a recommendation in the issue. Experimental
 code stays off `main` unless Sam asks for some of it in a PR, which then follows
-Builds and bugs from step 2. Once Sam accepts the findings, close the issue and delete
-the branch.
+Builds and bugs. Once Sam accepts the findings, close the issue and delete the branch.
 
 ## Rules
 
