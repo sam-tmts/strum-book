@@ -68,4 +68,5 @@ jobs:
         env:
           FILE: ${{ steps.sample.outputs.file }}
           URL: ${{ steps.upload.outputs.artifact-url }}
-        run: echo "Sample book: [${FILE#output/}]($URL)" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Sample book: [${FILE#output/}]($URL)" >> "$GITHUB_STEP_SUMMARY"
