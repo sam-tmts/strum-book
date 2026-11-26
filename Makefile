@@ -24,4 +24,4 @@ christmas:
 	test -d $(CHRISTMAS_DIR)/.git || git clone --quiet --no-checkout $(CHRISTMAS_REPO) $(CHRISTMAS_DIR)
 	git -C $(CHRISTMAS_DIR) -c advice.detachedHead=false checkout --quiet $(CHRISTMAS_COMMIT)
 	uv run --locked strumbook build $(CHRISTMAS_DIR) -o output/christmas-carols.pdf --title "Christmas Carols" \
-		--source https://github.com/pathawks/Christmas-Songs
+		--source $(CHRISTMAS_REPO:.git=)

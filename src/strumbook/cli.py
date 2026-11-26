@@ -10,6 +10,12 @@ from pathlib import Path
 from strumbook.book import BuildError, read_book
 
 
+def _url(value: str) -> str:
+    if not value.startswith(("https://", "http://")):
+        raise argparse.ArgumentTypeError(f"not a web address: {value!r}")
+    return value
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="strumbook",
@@ -34,15 +40,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="the edition line on the title page (default: today's date)",
     )
     build.add_argument(
-        "--source", metavar="URL", help="where the songs come from, linked in Credits"
+        "--source",
+        type=_url,
+        metavar="URL",
+        help="where the songs come from, linked in Credits",
     )
-    for section, what in (("title-page", "the title page"), ("credits", "Credits")):
-        build.add_argument(
-            f"--{section}",
-            choices=["on", "off"],
-            default="on",
-            help=f"include {what} (default on)",
-        )
+    build.add_argument(
+        "--title-page",
+        choices=["on", "off"],
+        default="on",
+        help="include the title page (default on)",
+    )
+    build.add_argument(
+        "--credits",
+        choices=["on", "off"],
+        default="on",
+        help="include Credits (default on)",
+    )
     build.add_argument(
         "--mid-word-chords",
         choices=["inline", "above"],

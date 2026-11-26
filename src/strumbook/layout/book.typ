@@ -306,15 +306,18 @@
 )[
   #heading(level: 1)[Credits] <credits>
   #text(9pt, weight: "bold", fill: red, tracking: 0.12em)[CREDITS] \
-  #text(26pt, weight: "bold")[Words and music]
-  #v(2mm)
-  #columns(2, gutter: 8mm, for song in data.songs.filter(s => s.credit != "") [
-    #link(label("song-" + song.id), block(breakable: false, below: 3.5mm, {
-      text(11pt, weight: "bold", song.title)
-      linebreak()
-      text(9pt, fill: muted, song.credit)
-    })) #label("credit-" + song.id)
-  ])
+  #let credited = data.songs.filter(s => s.credit != "")
+  #if credited.len() > 0 [
+    #text(26pt, weight: "bold")[Words and music]
+    #v(2mm)
+    #columns(2, gutter: 8mm, for song in credited [
+      #link(label("song-" + song.id), block(breakable: false, below: 3.5mm, {
+        text(11pt, weight: "bold", song.title)
+        linebreak()
+        text(9pt, fill: muted, song.credit)
+      })) #label("credit-" + song.id)
+    ])
+  ]
   #let made-with = (
     ("StrumBook", "https://github.com/sam-tmts/strumbook", "builds this book"),
     ("Typst", "https://typst.app", "lays out the pages"),

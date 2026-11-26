@@ -1,6 +1,7 @@
 """Issue #9: a title page and a Credits section, on synthetic songs."""
 
 import re
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -197,3 +198,39 @@ def test_bad_on_off_values_are_usage_errors(
     err = capsys.readouterr().err
     assert "usage:" in err
     assert "invalid choice" in err  # not merely "unrecognized arguments"
+
+
+def test_edition_defaults_to_todays_date(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = tmp_path / "songs"
+    folder.mkdir()
+    (folder / "a.cho").write_text("{title:Dated}\n[G]La\n", encoding="utf-8")
+    out = tmp_path / "book.pdf"
+    assert main(["build", str(folder), "-o", str(out)]) == 0, capsys.readouterr().err
+    today = date.today()  # this can flake only if the build runs over midnight
+    assert f"{today.day} {today:%B %Y}" in page_text(PdfReader(out), range(1))
+
+
+def test_credits_without_credited_songs_shows_only_made_with(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = tmp_path / "plain"
+    folder.mkdir()
+    (folder / "m.cho").write_text(SONGS["m"], encoding="utf-8")
+    out = tmp_path / "book.pdf"
+    assert main(["build", str(folder), "-o", str(out)]) == 0, capsys.readouterr().err
+    reader = PdfReader(out)
+    text = page_text(reader, book_map(reader).pages_of("Credits"))
+    assert "Made with" in text
+    assert "Words and music" not in text
+
+
+@pytest.mark.parametrize("value", ["", "github.com/x/songs"])
+def test_source_must_be_a_web_address(
+    value: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["build", "songs", "-o", "book.pdf", "--source", value])
+    assert exc.value.code == 2
+    assert "not a web address" in capsys.readouterr().err

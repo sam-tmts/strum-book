@@ -18,17 +18,18 @@ uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 
 `strumbook build SONGS_DIR -o BOOK.pdf` reads every `.cho` file in the folder and
 writes a PDF for a tablet: a title page, an index, the songs sorted by title (or
-`{sorttitle}`) with chord diagrams down the side, a chord reference page and Credits. Choruses are marked, and a
-small line under each title gives the song's subtitle and its words, music and
-translation credits. Every page has a strip of links along the bottom
-to the index, each letter and the reference page. Options:
+`{sorttitle}`) with chord diagrams down the side, a chord reference page and Credits.
+Choruses are marked, and a small line under each title gives the song's subtitle and
+its words, music and translation credits. Every page after the title page has a strip
+of links along the bottom to the index, each letter and the reference page. Options:
 
 - `--title TEXT`: the book's title (default: the folder's name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
-- `--source URL`: where the songs come from, linked in Credits.
-- `--title-page on|off`, `--credits on|off`: include the title page, and Credits: each
-  song's words, music and translation credits, linked both ways, and the projects the
-  book is made with. Both are on by default.
+- `--source URL`: where the songs come from, printed and linked in Credits. Leave it
+  out for a private collection.
+- `--title-page on|off`: include the title page (default on).
+- `--credits on|off`: include Credits (default on): each song's credits, linked both
+  ways with its credit line, and the projects the book is made with.
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
   drawn inline by default, which splits the word for search. `above` floats it over
   the word instead, so search finds the whole word.
