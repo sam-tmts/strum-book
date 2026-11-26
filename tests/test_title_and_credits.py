@@ -26,7 +26,6 @@ TOOLS = {
     "https://typst.app",
     "https://www.brailleinstitute.org/freefont/",
 }
-SOURCE = "https://example.org/our-songs"
 
 
 def build(
@@ -136,11 +135,7 @@ def test_about_page_says_how_the_book_was_made_with_links(
         assert address in about
     assert "https://" not in about
     assert "freefont/" not in about
-    sourced = build(tmp_path, capsys, "--source", SOURCE, name="sourced.pdf")
-    credits = book_map(sourced).pages_of("Credits")
-    assert uris(sourced, credits) == TOOLS | {SOURCE}
-    about = page_text(sourced, range(credits[-1], credits[-1] + 1))
-    assert "Songs came from this collection example.org/our-songs" in about
+    assert "Songs came from" not in about  # a folder build has no source line
 
 
 def test_credits_has_an_index_row_next_to_chord_shapes(
@@ -240,11 +235,12 @@ def test_credits_without_credited_songs_is_just_the_about_page(
     assert "Words and music" not in text
 
 
-@pytest.mark.parametrize("value", ["", "github.com/x/songs"])
-def test_source_must_be_a_web_address(
-    value: str, capsys: pytest.CaptureFixture[str]
-) -> None:
+@pytest.mark.parametrize("value", ["https://example.org/our-songs", "", "x"])
+def test_source_option_is_gone(value: str, capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         main(["build", "songs", "-o", "book.pdf", "--source", value])
     assert exc.value.code == 2
-    assert "not a web address" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "usage:" in err
+    assert "unrecognized arguments" in err
+    assert "--source" in err

@@ -2,6 +2,7 @@
 
 import socket
 from collections.abc import Iterator
+from pathlib import Path
 from typing import NoReturn
 
 import pytest
@@ -23,3 +24,19 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setattr(socket.socket, "connect_ex", _blocked)
     monkeypatch.setattr(socket.socket, "sendto", _blocked)
     yield
+
+
+@pytest.fixture
+def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point every platform's user-cache location at a temporary folder.
+
+    Returns that folder, so a test can look for what a build left in it. Use it for
+    any build that might clone a git source, so the real cache is never touched.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    for name in ("HOME", "USERPROFILE", "XDG_CACHE_HOME", "LOCALAPPDATA"):
+        monkeypatch.setenv(name, str(home))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setenv("GIT_TERMINAL_PROMPT", "0")
+    return home
