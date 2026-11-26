@@ -13,6 +13,7 @@ from book_helpers import (
     CAROLS_SOURCE,
     EMMANUEL,
     FULL_BOOK,
+    annotation_count,
     assert_clean_error,
     built,
     error_lines,
@@ -676,3 +677,213 @@ def test_a_clean_book_file_prints_no_warnings(
     code, err = run(book, tmp_path / "book.pdf", capsys=capsys)
     assert code == 0
     assert err == ""
+
+
+# Follow-up from review.
+
+
+def failing(
+    book: Path, out: Path, capsys: pytest.CaptureFixture[str], *options: str
+) -> tuple[int, str]:
+    """Build; the error text with the book's own path hidden, so that a needle
+    cannot match the temporary folder's name."""
+    code, err = run(book, out, *options, capsys=capsys)
+    return code, err.replace(str(book), "BOOK")
+
+
+@pytest.mark.parametrize("folder", ["..", "../..", "songs/../.."])
+def test_folder_cannot_leave_a_path_source(
+    folder: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_songs(tmp_path / "coll" / "songs", {"in": "{title:Inside}\n[G]La\n"})
+    write_songs(tmp_path, {"outside": "{title:Outside}\n[G]La\n"})
+    source = f"[sources.coll]\npath = '{tmp_path / 'coll'}'\nfolder = '{folder}'\n"
+    book = write_book(tmp_path, sources=source)
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, "coll")
+
+
+@pytest.mark.parametrize(
+    "stem",
+    [
+        "carols:away in a manger",
+        "carols:AWAY IN A MANGER",
+        "carols:../outside",
+        "carols:sub/inner",
+        "carols:._Away In A Manger",
+    ],
+)
+def test_pick_matches_file_names_exactly(
+    stem: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = tmp_path / "coll" / "songs"
+    write_songs(folder, {"Away In A Manger": "{title:Away In A Manger}\n[G]La\n"})
+    write_songs(folder, {"._Away In A Manger": "{title:Hidden}\n[G]La\n"})
+    write_songs(folder / "sub", {"inner": "{title:Inner}\n[G]La\n"})
+    write_songs(folder.parent, {"outside": "{title:Outside}\n[G]La\n"})
+    source = f"[sources.carols]\npath = '{folder.parent}'\n"
+    book = write_book(tmp_path, sources=source, songs=f'pick = ["{stem}"]')
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, stem.split(":", 1)[1])
+
+
+def test_exclude_of_a_song_that_is_not_there_is_a_warning(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    gone = ["carols:No Such Song", "carols:away in a manger"]  # wrong case: no match
+    book = write_book(tmp_path, songs=f'include = "all"\nexclude = {gone}')
+    out = tmp_path / "book.pdf"
+    code, err = run(book, out, capsys=capsys)
+    assert code == 0, err
+    assert titles(PdfReader(out)) == FULL_BOOK
+    warnings = warning_lines(err)
+    assert any("No Such Song" in line for line in warnings), err
+    assert any("away in a manger" in line for line in warnings), err
+    assert not error_lines(err)
+
+
+def test_each_address_is_credited_once(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    link = "https://example.org/dup"
+    sources = two_collections(tmp_path)
+    two = "\n[sources.two]"
+    sources = sources.replace(two, f"\nlink = '{link}'" + two)
+    sources += f"link = '{link}'\n"
+    reader = built(
+        write_book(tmp_path, sources=sources), tmp_path / "b.pdf", capsys=capsys
+    )
+    single = built(
+        write_book(
+            tmp_path,
+            sources=CAROLS_SOURCE + f"link = '{link}'\n",
+            name="single.book.toml",
+        ),
+        tmp_path / "single.pdf",
+        capsys=capsys,
+    )
+    assert annotation_count(single, link) >= 1
+    assert annotation_count(reader, link) == annotation_count(single, link)
+    about = about_of(reader)
+    assert about.count("Songs came from") == 1
+    assert about.count("example.org/dup") == 1
+
+
+def test_notes_keep_single_line_breaks_and_blank_lines_between_paragraphs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    notes = "First line\nSecond line\n\nNew paragraph\n"
+    book = write_book(tmp_path, book=f"notes = '''\n{notes}'''")
+    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
+    raw = reader.pages[0].extract_text()
+    assert "First line\nSecond line" in raw.replace("\r", "")
+    first, second, third = (raw.index(t) for t in ("First", "Second", "New para"))
+    assert first < second < third
+
+
+# Decisions recorded after review.
+
+
+def test_an_unknown_style_in_a_book_file_is_an_error_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, book='style = "gig"')
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, "gig")
+
+
+def test_title_on_the_command_line_overrides_the_book_files_title(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, title="Filed Title")
+    reader = built(book, tmp_path / "b.pdf", "--title", "Typed Title", capsys=capsys)
+    assert "Typed Title" in page_text(reader, range(1))
+    assert "Filed Title" not in page_text(reader, range(1))
+    assert reader.metadata is not None
+    assert reader.metadata.title == "Typed Title"
+
+
+def test_a_selection_that_ends_up_empty_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    everything = [AWAY, EMMANUEL, BETHLEHEM]
+    book = write_book(tmp_path, songs=f'include = "all"\nexclude = {everything}')
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out)
+
+
+@pytest.mark.parametrize(
+    ("setting", "key"),
+    [
+        ('credits = "yes"', "credits"),
+        ("title-page = 1", "title-page"),
+        ('pdf-tags = "on"', "pdf-tags"),
+        ('mid-word-chords = "sideways"', "mid-word-chords"),
+        ("mid-word-chords = true", "mid-word-chords"),
+    ],
+)
+def test_build_values_of_the_wrong_type_or_choice_are_errors_naming_the_key(
+    setting: str, key: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, build=setting)
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, key)
+
+
+def test_a_bad_order_value_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, songs='include = "all"\norder = "sideways"')
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, "order")
+
+
+def test_exclude_wins_over_pick(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(
+        tmp_path, songs=f'pick = ["{AWAY}", "{BETHLEHEM}"]\nexclude = ["{AWAY}"]'
+    )
+    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
+    assert titles(reader) == [
+        "Title",
+        "Index",
+        "O Little Town Of Bethlehem",
+        "Reference",
+        "Credits",
+    ]
+
+
+def test_listed_order_puts_picks_first_then_what_include_adds_by_file_name(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(
+        tmp_path,
+        sources=two_collections(tmp_path),
+        songs='include = ["two"]\npick = ["one:Zebra Song"]\norder = "listed"',
+    )
+    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
+    assert titles(reader) == [
+        "Title",
+        "Index",
+        "Zebra Song",
+        "Apple Tree",
+        "Kiwi",
+        "Reference",
+        "Credits",
+    ]
+
+
+def test_pin_on_a_path_source_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, sources=CAROLS_SOURCE + "pin = 'v1'\n")
+    out = tmp_path / "book.pdf"
+    code, err = failing(book, out, capsys)
+    assert_clean_error(code, err, out, "pin")

@@ -111,6 +111,17 @@ def uris(reader: PdfReader) -> set[str]:
     return found
 
 
+def annotation_count(reader: PdfReader, uri: str) -> int:
+    """How many link annotations in the book go to this web address."""
+    count = 0
+    for page in reader.pages:
+        for ref in page.get("/Annots", []):
+            action = ref.get_object().get("/A")
+            if action is not None and str(action.get_object().get("/URI")) == uri:
+                count += 1
+    return count
+
+
 # A local bare repo that stands in for GitHub.
 
 _IDENTITY = {
@@ -166,6 +177,17 @@ class Remote:
                 (target / name).write_text(content, encoding="utf-8")
         _git(self.work, "add", "--all")
         _git(self.work, "commit", "--quiet", "-m", f"add {', '.join(files)}")
+        _git(self.work, "push", "--quiet", "origin", "HEAD:refs/heads/main")
+        return _git(self.work, "rev-parse", "HEAD")
+
+    def commit_symlinks(self, links: dict[str, Path], folder: str = "") -> str:
+        """Add symlinks (name -> target outside the repo) and push."""
+        target = self.work / folder
+        target.mkdir(parents=True, exist_ok=True)
+        for name, destination in links.items():
+            (target / name).symlink_to(destination)
+        _git(self.work, "add", "--all")
+        _git(self.work, "commit", "--quiet", "-m", f"link {', '.join(links)}")
         _git(self.work, "push", "--quiet", "origin", "HEAD:refs/heads/main")
         return _git(self.work, "rev-parse", "HEAD")
 
