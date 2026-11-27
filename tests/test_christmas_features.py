@@ -197,7 +197,12 @@ def test_lyrics_are_searchable_and_chords_are_not_in_the_feature_book(
         a="{title:Odd Chords}\n{soc}\n[Bm7]Silver [Asus]bells [A#dim/C#]ring\n{eoc}\n",
     )
     reader, _ = build(folder, tmp_path, capsys)
-    text = text_of(reader)
-    assert "Silver bells ring" in text
+    ref = book_map(reader).pages_of("Reference")  # its notes page names chords
+    text = " ".join(
+        re.sub(r"\s+", " ", p.extract_text())
+        for n, p in enumerate(reader.pages)
+        if n not in ref
+    )
+    assert "Silver bells ring" in text_of(reader)
     for chord in ["Bm7", "Asus", "A#dim", "C#"]:
         assert chord not in text

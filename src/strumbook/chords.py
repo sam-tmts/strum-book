@@ -22,7 +22,7 @@ SLASH_DEFAULTS = {"GCEA": "simplify", "DGBE": "as-written"}
 
 _NAME = re.compile(r"([A-G][#b]?)([^/]*)(?:/([A-G][#b]?))?")
 _ENHARMONIC = {"C#": "Db", "D#": "Eb", "Gb": "F#", "G#": "Ab", "A#": "Bb"}
-_QUALITY = {"min": "m", "sus": "sus4"}
+_QUALITY = {"min": "m", "sus": "sus4", "+": "aug"}
 _PITCH = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 # The notes of each chord type, in semitones above the root.
 _NOTES = {
@@ -51,7 +51,20 @@ def shape(name: str, tuning: str = "GCEA") -> tuple[int, ...] | None:
         return None
     root, quality, _ = match.groups()
     root = _ENHARMONIC.get(root, root)
-    return _table(tuning).get(root + _QUALITY.get(quality, quality))
+    quality = _QUALITY.get(quality, quality)
+    table = _table(tuning)
+    if quality == "dim" and root + "dim" not in table:
+        quality = "dim7"  # as most ukulele books do
+    return table.get(root + quality)
+
+
+@cache
+def chord_notes() -> dict:
+    """The notes in each chord, for the Reference pages: fixed data, checked by a
+    person, because spelling them is easy to get subtly wrong."""
+    return json.loads(
+        files("strumbook").joinpath("chord-notes.json").read_text("utf-8")
+    )
 
 
 def simplify_slash(name: str) -> str:

@@ -53,7 +53,8 @@ def test_build_writes_index_songs_in_title_order_and_reference(
     assert pages.pages[0] == 0
     assert pages.pages == sorted(pages.pages)
     assert pages.page_count >= 7
-    assert len(pages.pages_of("Title")) == len(pages.pages_of("Reference")) == 1
+    assert len(pages.pages_of("Title")) == 1
+    assert len(pages.pages_of("Reference")) == 2  # chord shapes, then notes
 
 
 def test_title_defaults_to_folder_name(book: PdfReader) -> None:
@@ -71,8 +72,9 @@ def test_title_option_sets_pdf_title(
 
 
 def test_lyrics_are_searchable_and_chord_names_are_not(book: PdfReader) -> None:
-    text = text_of(book)
-    assert "crib for a bed" in text
+    ref = book_map(book).pages_of("Reference")
+    text = " ".join(p.extract_text() for n, p in enumerate(book.pages) if n not in ref)
+    assert "crib for a bed" in text_of(book)
     for chord in ["Em/G", "A7", "Am/C", "D/F#", "B7", "Bm"]:
         assert chord not in text
 

@@ -427,14 +427,15 @@ def test_an_unknown_bass_note_builds_without_an_error(
 
 # A fretted dot is a circle path drawn at its own offset, so the offsets of those
 # circles on a page say where every dot is, whatever the labels and headings say.
-_DOT = re.compile(r"q 1 0 0 -1 (\S+) (\S+) cm/c0 cs [\d. ]+ scn 0 3\.6850393 m")
+# The scale is 1 in a song and smaller on the chart, so match any scale.
+_DOT = re.compile(r"q ([\d.]+) 0 0 -\1 (\S+) (\S+) cm/c0 cs [\d. ]+ scn 0 3\.6850393 m")
 
 
 def _dots(reader: PdfReader, pages: range) -> list[tuple[str, str]]:
     found = []
     for n in pages:
         stream = reader.pages[n].get_contents().get_data().decode("latin-1")
-        found += _DOT.findall(stream.replace("\n", " "))
+        found += [(x, y) for _, x, y in _DOT.findall(stream.replace("\n", " "))]
     return sorted(found)
 
 

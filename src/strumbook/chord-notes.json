@@ -1,0 +1,147 @@
+{
+ "types": [
+  {"name": "Major", "formula": "1 3 5"},
+  {"name": "Minor", "formula": "1 ♭3 5"},
+  {"name": "7th", "formula": "1 3 5 ♭7"},
+  {"name": "Major 7th", "formula": "1 3 5 7"},
+  {"name": "Minor 7th", "formula": "1 ♭3 5 ♭7"},
+  {"name": "sus2", "formula": "1 2 5"},
+  {"name": "sus4", "formula": "1 4 5"},
+  {"name": "Augmented", "formula": "1 3 ♯5"},
+  {"name": "Diminished 7th", "formula": "1 ♭3 ♭5 ♭♭7"}
+ ],
+ "rows": [
+  {"root": "C", "cells": [
+   {"chord": "C", "notes": "C E G"},
+   {"chord": "Cm", "notes": "C E♭ G"},
+   {"chord": "C7", "notes": "C E G B♭"},
+   {"chord": "Cmaj7", "notes": "C E G B"},
+   {"chord": "Cm7", "notes": "C E♭ G B♭"},
+   {"chord": "Csus2", "notes": "C D G"},
+   {"chord": "Csus4", "notes": "C F G"},
+   {"chord": "C+", "notes": "C E G♯"},
+   {"chord": "Cdim7", "notes": "C E♭ G♭ A"}
+  ]},
+  {"root": "D♭ / C♯", "cells": [
+   {"chord": "D♭", "notes": "D♭ F A♭"},
+   {"chord": "C♯m", "notes": "C♯ E G♯"},
+   {"chord": "D♭7", "notes": "D♭ F A♭ B"},
+   {"chord": "D♭maj7", "notes": "D♭ F A♭ C"},
+   {"chord": "C♯m7", "notes": "C♯ E G♯ B"},
+   {"chord": "D♭sus2", "notes": "D♭ E♭ A♭"},
+   {"chord": "D♭sus4", "notes": "D♭ G♭ A♭"},
+   {"chord": "D♭+", "notes": "D♭ F A"},
+   {"chord": "C♯dim7", "notes": "C♯ E G B♭"}
+  ]},
+  {"root": "D", "cells": [
+   {"chord": "D", "notes": "D F♯ A"},
+   {"chord": "Dm", "notes": "D F A"},
+   {"chord": "D7", "notes": "D F♯ A C"},
+   {"chord": "Dmaj7", "notes": "D F♯ A C♯"},
+   {"chord": "Dm7", "notes": "D F A C"},
+   {"chord": "Dsus2", "notes": "D E A"},
+   {"chord": "Dsus4", "notes": "D G A"},
+   {"chord": "D+", "notes": "D F♯ A♯"},
+   {"chord": "Ddim7", "notes": "D F A♭ B"}
+  ]},
+  {"root": "E♭ / D♯", "cells": [
+   {"chord": "E♭", "notes": "E♭ G B♭"},
+   {"chord": "E♭m", "notes": "E♭ G♭ B♭"},
+   {"chord": "E♭7", "notes": "E♭ G B♭ D♭"},
+   {"chord": "E♭maj7", "notes": "E♭ G B♭ D"},
+   {"chord": "E♭m7", "notes": "E♭ G♭ B♭ D♭"},
+   {"chord": "E♭sus2", "notes": "E♭ F B♭"},
+   {"chord": "E♭sus4", "notes": "E♭ A♭ B♭"},
+   {"chord": "E♭+", "notes": "E♭ G B"},
+   {"chord": "D♯dim7", "notes": "D♯ F♯ A C"}
+  ]},
+  {"root": "E", "cells": [
+   {"chord": "E", "notes": "E G♯ B"},
+   {"chord": "Em", "notes": "E G B"},
+   {"chord": "E7", "notes": "E G♯ B D"},
+   {"chord": "Emaj7", "notes": "E G♯ B D♯"},
+   {"chord": "Em7", "notes": "E G B D"},
+   {"chord": "Esus2", "notes": "E F♯ B"},
+   {"chord": "Esus4", "notes": "E A B"},
+   {"chord": "E+", "notes": "E G♯ C"},
+   {"chord": "Edim7", "notes": "E G B♭ D♭"}
+  ]},
+  {"root": "F", "cells": [
+   {"chord": "F", "notes": "F A C"},
+   {"chord": "Fm", "notes": "F A♭ C"},
+   {"chord": "F7", "notes": "F A C E♭"},
+   {"chord": "Fmaj7", "notes": "F A C E"},
+   {"chord": "Fm7", "notes": "F A♭ C E♭"},
+   {"chord": "Fsus2", "notes": "F G C"},
+   {"chord": "Fsus4", "notes": "F B♭ C"},
+   {"chord": "F+", "notes": "F A C♯"},
+   {"chord": "Fdim7", "notes": "F A♭ B D"}
+  ]},
+  {"root": "F♯", "cells": [
+   {"chord": "F♯", "notes": "F♯ A♯ C♯"},
+   {"chord": "F♯m", "notes": "F♯ A C♯"},
+   {"chord": "F♯7", "notes": "F♯ A♯ C♯ E"},
+   {"chord": "F♯maj7", "notes": "F♯ A♯ C♯ F"},
+   {"chord": "F♯m7", "notes": "F♯ A C♯ E"},
+   {"chord": "F♯sus2", "notes": "F♯ G♯ C♯"},
+   {"chord": "F♯sus4", "notes": "F♯ B C♯"},
+   {"chord": "F♯+", "notes": "F♯ A♯ D"},
+   {"chord": "F♯dim7", "notes": "F♯ A C E♭"}
+  ]},
+  {"root": "G", "cells": [
+   {"chord": "G", "notes": "G B D"},
+   {"chord": "Gm", "notes": "G B♭ D"},
+   {"chord": "G7", "notes": "G B D F"},
+   {"chord": "Gmaj7", "notes": "G B D F♯"},
+   {"chord": "Gm7", "notes": "G B♭ D F"},
+   {"chord": "Gsus2", "notes": "G A D"},
+   {"chord": "Gsus4", "notes": "G C D"},
+   {"chord": "G+", "notes": "G B D♯"},
+   {"chord": "Gdim7", "notes": "G B♭ D♭ E"}
+  ]},
+  {"root": "A♭ / G♯", "cells": [
+   {"chord": "A♭", "notes": "A♭ C E♭"},
+   {"chord": "G♯m", "notes": "G♯ B D♯"},
+   {"chord": "A♭7", "notes": "A♭ C E♭ G♭"},
+   {"chord": "A♭maj7", "notes": "A♭ C E♭ G"},
+   {"chord": "G♯m7", "notes": "G♯ B D♯ F♯"},
+   {"chord": "A♭sus2", "notes": "A♭ B♭ E♭"},
+   {"chord": "A♭sus4", "notes": "A♭ D♭ E♭"},
+   {"chord": "A♭+", "notes": "A♭ C E"},
+   {"chord": "G♯dim7", "notes": "G♯ B D F"}
+  ]},
+  {"root": "A", "cells": [
+   {"chord": "A", "notes": "A C♯ E"},
+   {"chord": "Am", "notes": "A C E"},
+   {"chord": "A7", "notes": "A C♯ E G"},
+   {"chord": "Amaj7", "notes": "A C♯ E G♯"},
+   {"chord": "Am7", "notes": "A C E G"},
+   {"chord": "Asus2", "notes": "A B E"},
+   {"chord": "Asus4", "notes": "A D E"},
+   {"chord": "A+", "notes": "A C♯ F"},
+   {"chord": "Adim7", "notes": "A C E♭ G♭"}
+  ]},
+  {"root": "B♭ / A♯", "cells": [
+   {"chord": "B♭", "notes": "B♭ D F"},
+   {"chord": "B♭m", "notes": "B♭ D♭ F"},
+   {"chord": "B♭7", "notes": "B♭ D F A♭"},
+   {"chord": "B♭maj7", "notes": "B♭ D F A"},
+   {"chord": "B♭m7", "notes": "B♭ D♭ F A♭"},
+   {"chord": "B♭sus2", "notes": "B♭ C F"},
+   {"chord": "B♭sus4", "notes": "B♭ E♭ F"},
+   {"chord": "B♭+", "notes": "B♭ D F♯"},
+   {"chord": "A♯dim7", "notes": "A♯ C♯ E G"}
+  ]},
+  {"root": "B", "cells": [
+   {"chord": "B", "notes": "B D♯ F♯"},
+   {"chord": "Bm", "notes": "B D F♯"},
+   {"chord": "B7", "notes": "B D♯ F♯ A"},
+   {"chord": "Bmaj7", "notes": "B D♯ F♯ A♯"},
+   {"chord": "Bm7", "notes": "B D F♯ A"},
+   {"chord": "Bsus2", "notes": "B C♯ F♯"},
+   {"chord": "Bsus4", "notes": "B E F♯"},
+   {"chord": "B+", "notes": "B D♯ G"},
+   {"chord": "Bdim7", "notes": "B D F A♭"}
+  ]}
+ ]
+}
