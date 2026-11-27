@@ -49,6 +49,9 @@ Options, which override a StrumBook file's own settings:
   include each (default on).
 - `--reference-notes on|off`: include the "Notes in each chord" page in Reference
   (default on). With `off`, Reference keeps just the chord shapes.
+- `--reference-charts GCEA,DGBE`: a chord shapes page in Reference for each tuning
+  listed, in order, so one book can serve standard and baritone players (default: the
+  book's own tuning). Song diagrams still follow `--tuning`.
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's
   more than one set, or spares).
 - `--credits on|off`: include Credits (default on): each song's credits, linked both
@@ -56,8 +59,8 @@ Options, which override a StrumBook file's own settings:
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
   drawn inline by default, which splits the word for search. `above` floats it over
   the word instead, so search finds the whole word.
-- `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the Reference page,
-  for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
+- `--tuning GCEA|DGBE`: the chord shapes in the diagrams and, unless
+  `--reference-charts` says otherwise, on the Reference page, for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
   `baritone`), in any case. The chord names stay the same. The title page says which
   tuning, when the book has diagrams or Reference pages.
 - `--slash-chords simplify|as-written`: `simplify` drops a slash chord's bass note

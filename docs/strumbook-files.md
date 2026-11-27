@@ -174,6 +174,7 @@ on.
 | `navigation` | The strip of links along the bottom of each page | on | off |
 | `reference` | The Reference pages: chord shapes, and the notes in each chord | on | off |
 | `reference-notes` | The notes in each chord, when Reference is on | on | on |
+| `reference-charts` | A list of tunings, such as `["GCEA", "DGBE"]`: a chord shapes page for each, in order | the book's `tuning` | the book's `tuning` |
 | `credits` | Credits and "About this book" | on | off |
 | `set-breaks` | A page before each set | — | on when there's more than one set, or spares |
 | `mid-word-chords` | `"inline"` or `"above"`: see the [README](../README.md) | `"inline"` | `"inline"` |

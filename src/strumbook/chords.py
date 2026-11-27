@@ -37,6 +37,15 @@ def tuning(value: str) -> str | None:
     return {k.casefold(): v for k, v in TUNINGS.items()}.get(value.casefold())
 
 
+def tunings(values: object) -> list[str] | None:
+    """The tuning each of a list of values names, in order, or None if it isn't a
+    non-empty list of tuning names."""
+    if not isinstance(values, list) or not values:
+        return None
+    found = [tuning(v.strip()) if isinstance(v, str) else None for v in values]
+    return None if None in found else found
+
+
 @cache
 def _table(tuning: str) -> dict[str, tuple[int, ...]]:
     name = f"chords-{tuning.lower()}.json"

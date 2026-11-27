@@ -280,11 +280,13 @@
     }
     if data.reference_page or data.credits { group-head[Reference] }
     if data.reference_page {
-      index-row(
-        [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning.letters)],
-        index-number(<reference>),
-        <reference>,
-      )
+      for chart in data.charts {
+        index-row(
+          [Chord shapes #h(1.5mm) #text(10pt, fill: muted, chart.letters)],
+          index-number(label(chart.label)),
+          label(chart.label),
+        )
+      }
     }
     if data.credits { index-row([Credits], index-number(<credits>), <credits>) }
   })
@@ -335,7 +337,7 @@
 
 // ---------- reference ----------
 
-// The chord shapes in the book's tuning, then (with reference-notes on) the notes in
+// The chord shapes in each listed tuning, then (with reference-notes on) the notes in
 // each chord. Each carries the strip with Reference lit; the first is the Reference
 // target.
 #let reference-page(body) = page(
@@ -350,18 +352,21 @@
   #v(4mm)
 ]
 
-// A row per root and a column per type. The cells are diagrams only, shrunk to fit
-// all 108 on one page: the row and column name the chord.
-#let chart-page() = reference-page[
-  #heading(level: 1)[Reference] <reference>
-  #heading(level: 2)[Chord shapes]
-  #reference-head([Chord shapes], [#data.tuning.name (#data.tuning.letters)])
+// A row per root and a column per type, in one tuning. The cells are diagrams only,
+// shrunk to fit all 108 on one page: the row and column name the chord. The first
+// chart opens Reference; with several, each bookmark names its tuning.
+#let chart-page(chart, first, several) = reference-page[
+  #let tuning = [#chart.name (#chart.letters)]
+  #if first [#heading(level: 1)[Reference] <reference>]
+  #let mark = heading(level: 2, if several [Chord shapes: #tuning] else [Chord shapes])
+  #if first { mark } else [#mark #label(chart.label)]
+  #reference-head([Chord shapes], tuning)
   #grid(
     columns: (12mm,) + (1fr,) * 9,
     row-gutter: 3mm,
     align: center + horizon,
-    [], ..data.chart.headings.map(h => text(9pt, weight: "bold", fill: muted, h)),
-    ..data.chart.rows.map(row => (
+    [], ..data.chart_headings.map(h => text(9pt, weight: "bold", fill: muted, h)),
+    ..chart.rows.map(row => (
       align(left, text(14pt, weight: "bold", fill: muted, row.root)),
       ..row.shapes.map(frets => if frets != none { scale(85%, reflow: true, diagram(frets)) }),
     )).flatten(),
@@ -485,7 +490,9 @@
     song-page(song, song.show_diagrams, "")
   }
   if data.reference_page {
-    chart-page()
+    for (i, chart) in data.charts.enumerate() {
+      chart-page(chart, i == 0, data.charts.len() > 1)
+    }
     if data.reference_notes { notes-page() }
   }
   if data.credits { credits-section() }

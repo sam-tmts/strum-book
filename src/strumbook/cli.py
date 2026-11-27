@@ -10,7 +10,7 @@ from pathlib import Path
 
 from strumbook.book import BuildError, read_book
 from strumbook.bookfile import CHOICES, TYPES, BookFile, read_book_file
-from strumbook.chords import tuning
+from strumbook.chords import TUNINGS, tuning, tunings
 
 _ON_OFF = {"on": True, "off": False}
 
@@ -84,6 +84,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "as-written (default: simplify for GCEA, as-written for DGBE)",
     )
     build.add_argument(
+        "--reference-charts",
+        type=_tuning_list,
+        metavar="TUNINGS",
+        help="a chord shapes page in Reference for each of these tunings, in order, "
+        "such as GCEA,DGBE (default: the book's own tuning)",
+    )
+    build.add_argument(
         "--pdf-tags",
         choices=_ON_OFF,
         help="tag the PDF for screen readers (default on); off makes it smaller",
@@ -111,7 +118,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Settings layers: the type's defaults, the StrumBook file's [build], then
         # options given here.
         given = {
-            key: _ON_OFF.get(value, value)
+            key: _ON_OFF.get(value, value) if isinstance(value, str) else value
             for key in TYPES["song-library"]
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
@@ -121,6 +128,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             w
             for w in book.warnings
             if settings["chords"] or w not in book.missing_diagrams
+        ]
+        # One chart per tuning, at its first place in the list.
+        charts = settings["reference-charts"] or [settings["tuning"]]
+        settings["reference-charts"] = list(dict.fromkeys(charts))
+        shown += [
+            f"reference-charts lists {t} more than once; it gets one chart"
+            for t in settings["reference-charts"]
+            if charts.count(t) > 1
         ]
         for warning in shown:
             print(f"warning: {warning}", file=sys.stderr)
@@ -142,3 +157,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"{warnings} warning{'s' if warnings != 1 else ''}"
     )
     return 0
+
+
+def _tuning_list(value: str) -> list[str]:
+    """--reference-charts: comma-separated tuning names, in any case."""
+    found = tunings(value.split(","))
+    if found is None:
+        names = ", ".join(TUNINGS)
+        raise argparse.ArgumentTypeError(
+            f"{value!r} isn't a list of tunings: use {names}, such as GCEA,DGBE"
+        )
+    return found
