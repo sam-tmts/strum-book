@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from strumbook.book import Book, BuildError, Section, make_book, song_files
-from strumbook.sources import fetch
+from strumbook.sources import SIGN_IN, fetch
 
 # Each type's defaults for the [build] settings; the first layer of three.
 # set-breaks None means: on when a set list has more than one set, or spares.
@@ -46,27 +46,14 @@ SPARES = "Spares and encores"
 _NAME = re.compile(r"[a-z0-9-]+")
 _DOCS = "https://github.com/sam-tmts/strumbook/blob/main/docs/strumbook-files.md"
 # Where tomllib says it stopped: the end of its message on Python 3.12, which has no
-# lineno attribute.
-_AT = re.compile(r"\s*\(at line (\d+), column (\d+)\)$")
-# Likely slips on the line tomllib stopped at, each matching a key and a value, and
-# the advice for it.
-_SLIPS = (
-    (  # {title: Carols}
-        re.compile(r"\{\s*([\w-]+)\s*:\s*(.*?)\s*\}"),
-        (
-            "{found!r} is how a ChordPro song writes it; in a StrumBook file, write "
-            "{form}{under}"
-        ),
-    ),
-    (  # title: Carols
-        re.compile(r"([\w-]+)\s*:\s*(.*)"),
-        "{found!r} needs an equals sign and quotes: {form}",
-    ),
-    (  # title = Carols
-        re.compile(r"([\w-]+)\s*=\s*([^\s\"'\[{].*)"),
-        "{found!r} needs quotes around the text: {form}",
-    ),
-)
+# lineno attribute. No line or column means the end of the file.
+_AT = re.compile(r"\s*\(at (?:line (\d+), column (\d+)|end of document)\)$")
+# Likely slips on the line tomllib stopped at, each matching a key and a value.
+_CHORDPRO = re.compile(r"\{\s*([\w-]+)\s*:\s*(.*?)\s*\}")  # {title: Carols}
+_COLON = re.compile(r"([\w-]+)\s*:\s*(.*)")  # title: Carols
+_UNQUOTED = re.compile(r"([\w-]+)\s*=\s*([^\s\"'\[{].*)")  # title = Carols
+# [build] settings that are true or false, written on or off on the command line.
+_ON_OFF = {k for k, v in TYPES["song-library"].items() if isinstance(v, bool)}
 
 
 @dataclass(frozen=True)
@@ -293,23 +280,58 @@ def _toml_error(name: str, text: str, error: tomllib.TOMLDecodeError) -> str:
     at = _AT.search(str(error))
     if at is None:  # not expected, but never hide what tomllib said
         return f"{name} isn't valid TOML: {error}"
+    problem = str(error)[: at.start()]
+    problem = f"this isn't valid TOML ({problem[:1].lower() + problem[1:]})"
+    docs = f"see how to write a StrumBook file at {_DOCS}"
+    if at[1] is None:
+        return (
+            f"{name}, at the end of the file: {problem}; look for a missing ] or "
+            f"closing quotes, and {docs}"
+        )
     number, column = int(at[1]), int(at[2])
     lines = text.split("\n")  # as tomllib counts them
     found = lines[number - 1].strip() if number <= len(lines) else ""
-    for slip, advice in _SLIPS:
-        if match := slip.fullmatch(found):
-            key, value = match.groups()
-            form = f"{key} = {json.dumps(value.strip(), ensure_ascii=False)}"
-            under = " under [book]" if key in _BOOK_KEYS else ""
-            return f"{name}, line {number}: " + advice.format(
-                found=found, form=form, under=under
-            )
-    problem = str(error)[: at.start()]
-    return (
-        f"{name}, line {number}, column {column}: this isn't valid TOML "
-        f"({problem[:1].lower() + problem[1:]}); see how to write a StrumBook file "
-        f"at {_DOCS}"
-    )
+    if SIGN_IN.search(found):  # don't print it: it may hold a password or token
+        return (
+            f"{name}, line {number}: a git address can't hold sign-in details: leave "
+            "them to git's own sign-in"
+        )
+    if advice := _slip_advice(found):
+        return f"{name}, line {number}: {advice}"
+    return f"{name}, line {number}, column {column}: {problem}; {docs}"
+
+
+def _slip_advice(found: str) -> str | None:
+    """How to write `found` in TOML, if it's one of the likeliest slips."""
+    if match := _CHORDPRO.fullmatch(found):
+        key, value = match.groups()
+        under = " under [book]" if key in _BOOK_KEYS else ""
+        return (
+            f"{found!r} is how a ChordPro song writes it; in a StrumBook file, "
+            f"write {_toml_form(key, value)}{under}"
+        )
+    if match := _COLON.fullmatch(found):
+        return f"{found!r} needs an equals sign: write {_toml_form(*match.groups())}"
+    if match := _UNQUOTED.fullmatch(found):
+        form = _toml_form(*match.groups())
+        if form.endswith('"'):
+            return f"{found!r} needs quotes around the text: write {form}"
+        return f"{found!r} needs true or false, not on or off: write {form}"
+    return None
+
+
+def _toml_form(key: str, value: str) -> str:
+    """`key = value` in TOML: on and off for a [build] setting become true and
+    false, a value TOML can already read stays as written, and anything else is text
+    in quotes."""
+    value = value.strip()
+    if key in _ON_OFF and value.lower() in ("on", "off"):
+        return f"{key} = {str(value.lower() == 'on').lower()}"
+    try:
+        tomllib.loads(f"v = {value}")
+    except tomllib.TOMLDecodeError:
+        value = json.dumps(value, ensure_ascii=False)
+    return f"{key} = {value}"
 
 
 def _table(data: dict, key: str) -> dict:

@@ -141,3 +141,94 @@ def test_a_file_that_reads_fine_is_not_given_a_toml_error(
     assert code == 1
     assert "TOML" not in err
     assert "(at line" not in err
+
+
+# Errors at the very end of the file: tomllib says "(at end of document)" with no
+# line or column, so the message must say where in plain words instead.
+AT_THE_END = {
+    "an unclosed list as the last thing": (
+        '[book]\ntitle = "Carols"\n\n[songs]\npick = [\n  "carols:Silent Night"\n'
+    ),
+    "an unclosed multi-line string": '[book]\ntitle = "Carols"\nnotes = """\nHello\n',
+    "an unclosed string on the last line, with no newline": ('[book]\ntitle = "Carols'),
+}
+
+
+@pytest.mark.parametrize("text", AT_THE_END.values(), ids=AT_THE_END.keys())
+def test_an_error_at_the_end_of_the_file_says_so_in_plain_words(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], text: str
+) -> None:
+    out = tmp_path / "book.pdf"
+    code, err = run(write(tmp_path, text), out, capsys=capsys)
+    assert_clean_error(code, err, out, NAME, "https://")
+    message = error_lines(err)[0]
+    assert re.search(r"end of (the |this )?file", message, re.IGNORECASE), err
+    assert "end of document" not in message, err
+    assert "isn't valid TOML: " not in message, err
+
+
+# An address with sign-in details is never echoed, even inside a slip's message.
+@pytest.mark.parametrize(
+    "line",
+    [
+        "git = https://user:SECRET@example.com/x.git",
+        "git: https://user:SECRET@example.com/x.git",
+    ],
+)
+def test_a_slip_never_echoes_sign_in_details(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], line: str
+) -> None:
+    out = tmp_path / "book.pdf"
+    text = f'[book]\ntitle = "Carols"\n\n[sources.a]\n{line}\n'
+    code, err = run(write(tmp_path, text), out, capsys=capsys)
+    assert_clean_error(code, err, out, NAME)
+    assert "SECRET" not in err
+    assert says_line(error_lines(err)[0], 5), err
+
+
+# A value that is already valid TOML keeps its form; on and off become true and false.
+KEEPS_ITS_FORM = {
+    "a quoted value after a colon": (
+        '[book]\ntitle: "Carols"\n',
+        'title = "Carols"',
+        None,
+    ),
+    "false after a colon": (
+        '[book]\ntitle = "Carols"\n\n[build]\ncredits: false\n',
+        "credits = false",
+        'credits = "false"',
+    ),
+    "off as a word": (
+        '[book]\ntitle = "Carols"\n\n[build]\ncredits = off\n',
+        "credits = false",
+        'credits = "off"',
+    ),
+    "on as a word": (
+        '[book]\ntitle = "Carols"\n\n[build]\ncredits = on\n',
+        "credits = true",
+        'credits = "on"',
+    ),
+    "off after a colon": (
+        '[book]\ntitle = "Carols"\n\n[build]\ncredits: off\n',
+        "credits = false",
+        'credits = "off"',
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("text", "shown", "not_shown"), KEEPS_ITS_FORM.values(), ids=KEEPS_ITS_FORM.keys()
+)
+def test_the_toml_form_keeps_valid_values_as_they_are(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    text: str,
+    shown: str,
+    not_shown: str | None,
+) -> None:
+    out = tmp_path / "book.pdf"
+    code, err = run(write(tmp_path, text), out, capsys=capsys)
+    assert_clean_error(code, err, out, NAME, shown)
+    assert '\\"' not in err
+    if not_shown:
+        assert not_shown not in err
