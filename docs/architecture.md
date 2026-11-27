@@ -69,4 +69,5 @@ flowchart LR
 
 To be built issue by issue: the `set-list` type for gig books, the RHS layout and
 build options, baritone (DGBE) diagrams, and a separate **importer** that drafts
-ChordPro from PDFs or pasted chords-over-lyrics text, for a person to check. Add modules when an issue needs them, not before.
+ChordPro from PDFs or pasted chords-over-lyrics text, for a person to check. Add
+modules when an issue needs them, not before.
