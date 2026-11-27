@@ -9,7 +9,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from strumbook.book import BuildError, read_book
-from strumbook.bookfile import CHOICES, STYLES, BookFile, read_book_file
+from strumbook.bookfile import CHOICES, TYPES, BookFile, read_book_file
 
 _ON_OFF = {"on": True, "off": False}
 
@@ -25,33 +25,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", title="commands")
     build = commands.add_parser(
         "build",
-        help="build a tablet songbook PDF from a book file or a folder of songs",
-        description="Build a tablet songbook PDF from a book file (.book.toml), or "
-        "from every .cho file in a folder. Options given here override the book "
+        help="build a tablet songbook PDF from a StrumBook file or a folder of songs",
+        description="Build a tablet songbook PDF from a StrumBook file "
+        "(.strumbook.toml), or "
+        "from every .cho file in a folder. Options given here override the StrumBook "
         "file's [build] settings.",
     )
-    build.add_argument("book", type=Path, metavar="BOOK.book.toml|SONGS_DIR")
+    build.add_argument("book", type=Path, metavar="BOOK.strumbook.toml|SONGS_DIR")
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
     build.add_argument(
         "--title",
-        help="the book's title (default: the book file's title, or the folder's name)",
+        help="the book's title (default: the StrumBook file's title, or the folder's name)",
     )
     build.add_argument(
         "--edition", help="the edition line on the title page (default: today's date)"
     )
     build.add_argument(
-        "--style",
-        choices=list(STYLES),
-        help="songbook (A to Z, the default) or setlist (a gig's running order); "
-        "the defaults below are for songbook",
+        "--type",
+        choices=list(TYPES),
+        help="song-library (A to Z, the default) or set-list (a gig's running "
+        "order); the defaults below are for song-library",
     )
     for option, what, default in [
         ("title-page", "the title page", "on"),
-        ("index", "the index", "on; setlist off"),
-        ("navigation", "the strip of links along the bottom", "on; setlist off"),
-        ("reference", "the chord reference page", "on; setlist off"),
-        ("credits", "Credits", "on; setlist off"),
-        ("set-breaks", "a page before each set", "setlist: on for 2+ sets or spares"),
+        ("index", "the index", "on; set-list off"),
+        ("navigation", "the strip of links along the bottom", "on; set-list off"),
+        ("reference", "the chord reference page", "on; set-list off"),
+        ("credits", "Credits", "on; set-list off"),
+        ("set-breaks", "a page before each set", "set-list: on for 2+ sets or spares"),
     ]:
         build.add_argument(
             f"--{option}", choices=_ON_OFF, help=f"include {what} (default {default})"
@@ -79,22 +80,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     built = f"{today.day} {today:%B %Y}"
     try:
         if args.book.is_file() or args.book.suffix == ".toml":
-            recipe = read_book_file(args.book, args.style)
-        elif args.style == "setlist":
-            raise BuildError("the setlist style needs a book file with sets")
+            recipe = read_book_file(args.book, args.type)
+        elif args.type == "set-list":
+            raise BuildError("the set-list type needs a StrumBook file with sets")
         else:  # the shortcut: every song in one folder
-            recipe = BookFile(read_book(args.book), "songbook", None, {})
+            recipe = BookFile(read_book(args.book), "song-library", None, {})
         book = recipe.book
         if args.title is not None:
             book = replace(book, title=args.title)
-        # Settings layers: the style's defaults, the book file's [build], then
+        # Settings layers: the type's defaults, the StrumBook file's [build], then
         # options given here.
         given = {
             key: _ON_OFF.get(value, value)
-            for key in STYLES["songbook"]
+            for key in TYPES["song-library"]
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
-        settings = {**STYLES[recipe.style], **recipe.build, **given}
+        settings = {**TYPES[recipe.type], **recipe.build, **given}
         for warning in book.warnings:
             print(f"warning: {warning}", file=sys.stderr)
         edition = args.edition or recipe.edition or built
@@ -102,7 +103,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             book,
             args.output,
             settings,
-            style=recipe.style,
+            kind=recipe.type,
             edition=edition,
             built=built,
         )

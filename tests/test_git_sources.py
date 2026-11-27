@@ -1,10 +1,11 @@
 """Issue #12: `git` sources, against a local bare repo standing in for GitHub.
 
-The book file names https://example.test/carols.git; git itself is told (through its
+The StrumBook file names https://example.test/carols.git; git itself is told (through its
 environment) to fetch that address from the bare repo. The user cache is a temporary
 folder, so nothing here touches the real one or the network."""
 
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -14,7 +15,6 @@ from book_helpers import (
     CAROLS,
     FULL_BOOK,
     Remote,
-    annotation_count,
     assert_clean_error,
     built,
     git_source,
@@ -67,7 +67,7 @@ def test_a_git_source_is_cloned_into_the_user_cache(
     assert titles(reader) == FULL_BOOK
     assert list(isolated_home.rglob("strumbook")), "nothing cached under strumbook/"
     assert list(working_folder.iterdir()) == []  # no collections/ folder here
-    assert [p.name for p in (tmp_path / "books").iterdir()] == ["test.book.toml"]
+    assert [p.name for p in (tmp_path / "books").iterdir()] == ["test.strumbook.toml"]
 
 
 def test_each_build_fetches_the_latest_songs(
@@ -159,9 +159,11 @@ def test_switching_the_pin_reuses_the_same_cache(
     first = remote.commit({"Pinned Tune.cho": "{title:Pinned Tune}\n[G]La\n"})
     remote.commit({"Brand New Tune.cho": NEW_SONG})
     pinned = write_book(
-        tmp_path, sources=git_source(extra=f'pin = "{first}"\n'), name="a.book.toml"
+        tmp_path,
+        sources=git_source(extra=f'pin = "{first}"\n'),
+        name="a.strumbook.toml",
     )
-    latest = write_book(tmp_path, sources=git_source(), name="b.book.toml")
+    latest = write_book(tmp_path, sources=git_source(), name="b.strumbook.toml")
     one = built(pinned, tmp_path / "one.pdf", capsys=capsys)
     assert "Brand New Tune" not in titles(one)
     two = built(latest, tmp_path / "two.pdf", capsys=capsys)
@@ -208,22 +210,35 @@ def test_a_pin_cannot_smuggle_in_a_git_option(
 # Credits.
 
 
-def test_a_git_sources_address_is_credited(
+def credits_text(reader: PdfReader) -> str:
+    last = book_map(reader).pages_of("Credits")[-1]
+    return " ".join(reader.pages[last].extract_text().split())
+
+
+def test_a_git_address_never_appears_in_the_book(
     remote: Remote, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(tmp_path, sources=git_source())
     reader = built(book, tmp_path / "book.pdf", capsys=capsys)
-    assert ADDRESS in uris(reader)
+    assert ADDRESS not in uris(reader)
+    assert "example.test" not in text_of(reader)
+    about = credits_text(reader)
+    assert "carols" in about  # listed by name
+    assert "No public link" in about
 
 
-def test_a_link_replaces_the_git_address_in_credits(
+def test_a_git_source_with_a_link_shows_the_link_and_never_the_address(
     remote: Remote, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     link = "https://example.org/our-songs"
     book = write_book(tmp_path, sources=git_source(extra=f"link = '{link}'\n"))
-    found = uris(built(book, tmp_path / "book.pdf", capsys=capsys))
+    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
+    found = uris(reader)
     assert link in found
     assert ADDRESS not in found
+    assert "example.test" not in text_of(reader)
+    assert "example.org/our-songs" in credits_text(reader)
+    assert "No public link" not in credits_text(reader)
 
 
 # Which addresses git is allowed to see.
@@ -457,7 +472,7 @@ def test_one_address_with_different_pins_is_an_error_naming_the_address(
     assert_clean_error(code, err, out, ADDRESS)
 
 
-def test_one_address_and_pin_with_different_folders_builds_and_is_credited_once(
+def test_one_address_and_pin_with_different_folders_builds_and_each_is_listed(
     remote: Remote, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     remote.commit({"Left Tune.cho": "{title:Left Tune}\n[G]La\n"}, folder="left")
@@ -471,11 +486,8 @@ def test_one_address_and_pin_with_different_folders_builds_and_is_credited_once(
     book = write_book(tmp_path, sources=sources)
     reader = built(book, tmp_path / "book.pdf", capsys=capsys)
     assert titles(reader)[2:4] == ["Left Tune", "Right Tune"]
-    single = write_book(
-        tmp_path,
-        sources=git_source(extra=f'pin = "{first}"\nfolder = "left"\n'),
-        name="single.book.toml",
-    )
-    one = built(single, tmp_path / "single.pdf", capsys=capsys)
-    assert annotation_count(one, ADDRESS) >= 1
-    assert annotation_count(reader, ADDRESS) == annotation_count(one, ADDRESS)
+    assert ADDRESS not in uris(reader)
+    about = credits_text(reader)
+    assert re.search(r"\bleft\b", about)
+    assert re.search(r"\bright\b", about)
+    assert about.count("No public link") == 2  # one row per source

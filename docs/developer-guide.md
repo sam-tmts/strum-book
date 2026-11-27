@@ -46,9 +46,10 @@ uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 
 `make christmas` builds the full book from all 28 carols in
 [pathawks/Christmas-Songs](https://github.com/pathawks/Christmas-Songs), described by
-the book file `books/christmas.book.toml`, which pins a commit. StrumBook clones them
-into the user cache folder ([book files](book-files.md#downloaded-collections) says
-where; deleting it is always safe), writes `output/christmas-carols.pdf` and prints the
+the StrumBook file `books/christmas.strumbook.toml`, which pins a commit. StrumBook
+clones them into the user cache folder
+([StrumBook files](strumbook-files.md#downloaded-collections) says where; deleting it
+is always safe), writes `output/christmas-carols.pdf` and prints the
 number of warnings, which should be 0. It needs network access to github.com the first
 time, so CI doesn't run it. A Claude Code sandbox can't write to the cache folder: run
 it in your own terminal.

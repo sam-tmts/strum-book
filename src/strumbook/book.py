@@ -55,10 +55,9 @@ class Book:
     songs: tuple[BookSong, ...]  # in book order
     reference: tuple[tuple[str, tuple[Diagram, ...]], ...]  # root, its diagrams
     warnings: tuple[str, ...]
-    a_to_z: bool = True  # False when the songs are in a listed running order
     subtitle: str = ""
     notes: str = ""  # plain text; paragraphs separated by blank lines
-    sources: tuple[str, ...] = ()  # web addresses for Credits
+    sources: tuple[tuple[str, str], ...] = ()  # for Credits: (name, link or "")
     sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
 
 
@@ -110,14 +109,14 @@ def make_book(
     title: str,
     paths: list[Path],
     *,
-    a_to_z: bool = True,
     subtitle: str = "",
     notes: str = "",
-    sources: tuple[str, ...] = (),
+    sources: tuple[tuple[str, str], ...] = (),
     sections: tuple[Section, ...] = (),
     warnings: tuple[str, ...] = (),
 ) -> Book:
-    """A book of the songs in `paths`, sorted by title, or in the order given."""
+    """A book of the songs in `paths`, sorted by title, or with sections in the order
+    given."""
     songs: list[tuple[Song, Path]] = []
     found: list[str] = list(warnings)
     skipped: dict[str, list[str]] = {}
@@ -138,7 +137,7 @@ def make_book(
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
         found.append(f"skipped unknown directive {{{name}}} in {where}")
 
-    if a_to_z and not sections:
+    if not sections:
         songs.sort(key=lambda s: (*sort_key(s[0]), s[1]))
     return Book(
         title=title,
@@ -156,7 +155,6 @@ def make_book(
             for root in REFERENCE_ROOTS
         ),
         warnings=tuple(found),
-        a_to_z=a_to_z and not sections,
         subtitle=subtitle,
         notes=notes,
         sources=sources,

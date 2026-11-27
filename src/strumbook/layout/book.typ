@@ -1,4 +1,4 @@
-// StrumBook's FTR layout. A songbook: title page, index, songs with chord diagrams,
+// StrumBook's FTR layout. A song library: title page, index, songs with chord diagrams,
 // reference page, credits. A set list: title page, running order, then each set's
 // break page and songs; the index, reference page and credits are optional.
 // All content arrives as JSON in sys.inputs.data, from strumbook/render.py.
@@ -188,7 +188,7 @@
   let key = song.id + variant
   let start = label("song-" + key)
   let end = label("end-" + key)
-  let back = if data.style == "setlist" { <running-order> } else if data.index_page {
+  let back = if data.type == "set-list" { <running-order> } else if data.index_page {
     label("index-" + song.id)
   }
   let cols = song.diagram_columns
@@ -357,7 +357,7 @@
 
 #let title-page() = page(margin: (x: side, top: 60mm, bottom: bottom-m))[
   #heading(level: 1)[Title]
-  #kicker(if data.style == "setlist" [SET LIST] else [SONGBOOK]) \
+  #kicker(if data.type == "set-list" [SET LIST] else [SONGBOOK]) \
   #text(40pt, weight: "bold", data.title) \
   #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
   #text(14pt, fill: muted, data.edition)
@@ -398,7 +398,10 @@
     ("Atkinson Hyperlegible", "set the words, in the Braille Institute's typeface made to be easy to read",
       "https://www.brailleinstitute.org/freefont/"),
   )
-  for url in data.sources { made.push(("Songs", "came from this collection", url)) }
+  // Every source, by name; only a public link is shown, never a git address.
+  for s in data.sources {
+    made.push((s.name, "songs from this collection", if s.link != "" { s.link }))
+  }
   let address(url) = url.trim("https://", at: start).trim("http://", at: start).trim("/", at: end)
   section-page[
     #if credited.len() == 0 { opening }
@@ -411,10 +414,14 @@
       columns: (auto, 1fr),
       inset: (left: 0mm, right: 5mm, y: 2.6mm),
       stroke: (bottom: 0.5pt + rule, x: none, top: none),
-      ..made.map(((name, what, url)) => (
-        link(url, text(11pt, weight: "bold", name)),
-        [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))],
-      )).flatten()
+      ..made.map(((name, what, url)) => {
+        let name = text(11pt, weight: "bold", name)
+        if url == none {
+          (name, [#text(10pt, what) \ #text(9pt, fill: muted)[No public link]])
+        } else {
+          (link(url, name), [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))])
+        }
+      }).flatten()
     )
   ]
 }
@@ -429,7 +436,7 @@
   }
 } else {
   if data.title_page { title-page() }
-  if data.style == "setlist" { running-order-page() }
+  if data.type == "set-list" { running-order-page() }
   if data.index_page { index-page() }
   for song in data.songs {
     let set-break = song.at("break", default: none)

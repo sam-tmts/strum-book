@@ -34,12 +34,12 @@ def render(
     output: Path,
     settings: dict,
     *,
-    style: str,
+    kind: str,
     edition: str,
     built: str,
 ) -> None:
-    """Write `book` as a PDF in `style` ("songbook" or "setlist"), with the build
-    `settings` (see bookfile.STYLES). `built` is the build date, for the About page."""
+    """Write `book` as a PDF of type `kind` ("song-library" or "set-list"), with the
+    build `settings` (see bookfile.TYPES). `built` is the build date, for the About page."""
     songs = [_song_data(s) for s in book.songs]
     sections = _sections(book, songs, settings["set-breaks"])
     reference = [
@@ -55,8 +55,8 @@ def render(
         "count": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
         "edition": edition,
         "built": built,
-        "sources": list(book.sources),
-        "style": style,
+        "sources": [{"name": name, "link": link} for name, link in book.sources],
+        "type": kind,
         "title_page": settings["title-page"],
         "index_page": settings["index"],
         "reference_page": settings["reference"],
@@ -65,7 +65,7 @@ def render(
         "mid_word": settings["mid-word-chords"],
         "sections": sections,
         "songs": songs,
-        # The index is always A to Z, whatever the book's order.
+        # The index is always A to Z, even in a set list.
         "index": [
             {
                 "id": s.id,
@@ -171,7 +171,7 @@ def _sections(book: Book, songs: list[dict], set_breaks: bool | None) -> list[di
 def _strip(book: Book, settings: dict, sections: list[dict]) -> list[dict]:
     """The cells of the link strip, left to right: each has a `key` (what a page
     lights up), a `target` label and an `icon` or `text`. Empty when there's no strip:
-    a set list needs named sets, a songbook needs songs in A-to-Z order."""
+    a set list needs named sections."""
     if sections:
         named = [s for s in sections if s["name"]]
         if not named:
@@ -185,12 +185,10 @@ def _strip(book: Book, settings: dict, sections: list[dict]) -> list[dict]:
             }
             for s in named
         ]
-    elif book.a_to_z:
+    else:
         index = settings["index"]
         cells = [{"key": "index", "icon": "index", "target": "index"}] if index else []
         cells += _letters(book, "reference" if settings["reference"] else None)
-    else:
-        return []
     if settings["reference"]:
         cells.append({"key": "ref", "icon": "ref", "target": "reference"})
     return cells

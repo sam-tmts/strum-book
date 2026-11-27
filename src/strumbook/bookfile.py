@@ -1,6 +1,6 @@
-"""Book files: a TOML recipe for one book, naming its sources, songs and settings.
+"""StrumBook files: a TOML recipe for one book, naming its sources, songs and settings.
 
-See docs/book-files.md for the format.
+See docs/strumbook-files.md for the format.
 """
 
 import re
@@ -11,10 +11,10 @@ from pathlib import Path
 from strumbook.book import Book, BuildError, Section, make_book, song_files
 from strumbook.sources import fetch
 
-# Each style's defaults for the [build] settings; the first layer of three.
+# Each type's defaults for the [build] settings; the first layer of three.
 # set-breaks None means: on when a set list has more than one set, or spares.
-STYLES = {
-    "songbook": {
+TYPES = {
+    "song-library": {
         "title-page": True,
         "index": True,
         "navigation": True,
@@ -24,7 +24,7 @@ STYLES = {
         "mid-word-chords": "inline",
         "pdf-tags": True,
     },
-    "setlist": {
+    "set-list": {
         "title-page": True,
         "index": False,
         "navigation": False,
@@ -37,9 +37,9 @@ STYLES = {
 }
 CHOICES = {"mid-word-chords": ("inline", "above")}
 
-_BOOK_KEYS = {"title", "style", "edition", "subtitle", "notes"}
+_BOOK_KEYS = {"title", "type", "edition", "subtitle", "notes"}
 _SOURCE_KEYS = {"path", "git", "pin", "folder", "link"}
-_SONGS_KEYS = {"include", "pick", "exclude", "order", "set", "spares"}
+_SONGS_KEYS = {"include", "pick", "exclude", "set", "spares"}
 _SET_KEYS = {"name", "songs", "running-time", "notes"}
 SPARES = "Spares and encores"
 _NAME = re.compile(r"[a-z0-9-]+")
@@ -48,13 +48,13 @@ _NAME = re.compile(r"[a-z0-9-]+")
 @dataclass(frozen=True)
 class BookFile:
     book: Book
-    style: str
+    type: str
     edition: str | None
     build: dict[str, object]  # the [build] settings, checked
 
 
-def read_book_file(path: Path, style: str | None = None) -> BookFile:
-    """Read a book file; `style`, from the command line, overrides the file's."""
+def read_book_file(path: Path, kind: str | None = None) -> BookFile:
+    """Read a StrumBook file; `kind`, a type from the command line, overrides its own."""
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8-sig"))
     except UnicodeDecodeError:
@@ -69,14 +69,16 @@ def read_book_file(path: Path, style: str | None = None) -> BookFile:
     warnings += _unknown(book, _BOOK_KEYS, "[book]")
     title = _text(book, "title", "[book]")
     if not title:
-        raise BuildError('the book file needs a title: add title = "…" under [book]')
-    style = style or _text(book, "style", "[book]") or "songbook"
-    if style not in STYLES:
-        raise BuildError(f"unknown style {style!r}: use {_either(STYLES)}")
+        raise BuildError(
+            'the StrumBook file needs a title: add title = "…" under [book]'
+        )
+    kind = kind or _text(book, "type", "[book]") or "song-library"
+    if kind not in TYPES:
+        raise BuildError(f"unknown type {kind!r}: use {_either(TYPES)}")
 
     build = _table(data, "build")
-    warnings += _unknown(build, set(STYLES["songbook"]), "[build]")
-    build = {k: v for k, v in build.items() if k in STYLES["songbook"]}
+    warnings += _unknown(build, set(TYPES["song-library"]), "[build]")
+    build = {k: v for k, v in build.items() if k in TYPES["song-library"]}
     for key, value in build.items():
         expected = CHOICES.get(key)
         if expected is None and not isinstance(value, bool):
@@ -86,8 +88,8 @@ def read_book_file(path: Path, style: str | None = None) -> BookFile:
 
     sources = _table(data, "sources")
     if not sources:
-        raise BuildError("the book file has no [sources.<name>] tables")
-    folders, links, pins = {}, [], {}
+        raise BuildError("the StrumBook file has no [sources.<name>] tables")
+    folders, credits, pins = {}, [], {}
     for name, source in sources.items():
         if not _NAME.fullmatch(name) or not isinstance(source, dict):
             raise BuildError(
@@ -97,8 +99,7 @@ def read_book_file(path: Path, style: str | None = None) -> BookFile:
         folder, link, more = _source(name, source, path.parent)
         folders[name] = folder
         warnings += more
-        if link:
-            links.append(link)
+        credits.append((name, link))
         # Sources sharing an address share one checkout, so they must agree on its pin.
         url, pin = source.get("git"), source.get("pin")
         if url and pins.setdefault(url, pin) != pin:
@@ -106,38 +107,36 @@ def read_book_file(path: Path, style: str | None = None) -> BookFile:
 
     songs = _table(data, "songs")
     warnings += _unknown(songs, _SONGS_KEYS, "[songs]")
-    if style == "setlist":
-        chosen, sections = _setlist(songs, folders, warnings)
+    if kind == "set-list":
+        chosen, sections = _set_list(songs, folders, warnings)
     else:
-        chosen, sections = _songbook(songs, folders, warnings), ()
+        chosen, sections = _song_library(songs, folders, warnings), ()
     return BookFile(
         book=make_book(
             title,
             chosen,
-            a_to_z=_text(songs, "order", "[songs]") in ("", "a-z") and not sections,
             subtitle=_text(book, "subtitle", "[book]"),
             notes=_text(book, "notes", "[book]"),
-            sources=tuple(dict.fromkeys(links)),
+            sources=tuple(credits),
             sections=sections,
             warnings=tuple(warnings),
         ),
-        style=style,
+        type=kind,
         edition=_text(book, "edition", "[book]") or None,
         build=build,
     )
 
 
-def _songbook(songs: dict, folders: dict[str, Path], warnings: list[str]) -> list[Path]:
+def _song_library(
+    songs: dict, folders: dict[str, Path], warnings: list[str]
+) -> list[Path]:
     """The songs `include`, `pick` and `exclude` choose."""
     for key in ("set", "spares"):
         if key in songs:
             raise BuildError(
                 f"[songs] {key} is for set lists, but this book is building as a "
-                'songbook: use style = "setlist"'
+                'song library: use type = "set-list"'
             )
-    order = _text(songs, "order", "[songs]") or "a-z"
-    if order not in ("a-z", "listed"):
-        raise BuildError('[songs] order must be "a-z" or "listed"')
     include = songs.get("include", [])
     if include == "all":
         include = list(folders)
@@ -163,12 +162,12 @@ def _songbook(songs: dict, folders: dict[str, Path], warnings: list[str]) -> lis
     chosen = list(dict.fromkeys(p for p in picked + included if p not in excluded))
     if not chosen:
         raise BuildError(
-            "the book file chooses no songs: add include or pick under [songs]"
+            "the StrumBook file chooses no songs: add include or pick under [songs]"
         )
     return chosen
 
 
-def _setlist(
+def _set_list(
     songs: dict, folders: dict[str, Path], warnings: list[str]
 ) -> tuple[list[Path], tuple[Section, ...]]:
     """The songs in running order, from [[songs.set]] or `pick`, then `spares`."""
@@ -178,11 +177,6 @@ def _setlist(
                 f"[songs] {key} isn't for set lists: choose songs with [[songs.set]] "
                 "or pick"
             )
-    if _text(songs, "order", "[songs]") not in ("", "listed"):
-        raise BuildError(
-            '[songs] order in a set list can only be "listed" (or left out): '
-            'set lists keep their running order, so not "a-z"'
-        )
     sets = songs.get("set", [])
     if not isinstance(sets, list) or not all(isinstance(s, dict) for s in sets):
         raise BuildError("[songs] set must be [[songs.set]] tables")
@@ -223,7 +217,7 @@ def _setlist(
 
 
 def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
-    """The songs folder for one source, the link for Credits, and warnings."""
+    """The songs folder for one source, its link for Credits (or ""), and warnings."""
     where = f"[sources.{name}]"
     warnings = _unknown(source, _SOURCE_KEYS, where)
     local, url = _text(source, "path", where), _text(source, "git", where)
@@ -250,7 +244,7 @@ def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
         raise BuildError(f"{where} folder {sub!r} is outside the source")
     if not song_files(folder):
         raise BuildError(f"source {name!r} has no songs: no .cho files in {folder}")
-    return folder, link or url, warnings
+    return folder, link, warnings
 
 
 def _song(ref: object, folders: dict[str, Path], key: str) -> tuple[Path | None, str]:

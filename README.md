@@ -4,21 +4,22 @@ Tools for building songbooks for ukulele groups and bands from collections of Ch
 songs: tablet-friendly PDFs with a tappable index, searchable text and chord diagrams
 for each instrument. The [problem statement](docs/problem-statement.md) explains why.
 
-**Status: early development.** It builds a songbook or a gig set list from a book
-file, or a songbook from one folder of songs, with GCEA chord diagrams.
+**Status: early development.** It builds a song library or a gig set list from a
+StrumBook file, or a song library from one folder of songs, with GCEA chord diagrams.
 
 ## Try it
 
-You need [uv](https://docs.astral.sh/uv/) and git. From the repository root:
+You need [uv](https://docs.astral.sh/uv/), and git to clone this repository. From its
+root:
 
 ```sh
 uv sync --locked
 uv run --locked strumbook build tests/fixtures/carols -o output/carols.pdf
 ```
 
-`strumbook build BOOK.book.toml -o BOOK.pdf` builds the book a
-[book file](docs/book-files.md) describes: its title, which song collections to draw on
-(folders, or git repositories it downloads), which songs, and its settings.
+`strumbook build BOOK.strumbook.toml -o BOOK.pdf` builds the book a
+[StrumBook file](docs/strumbook-files.md) describes: its title, which song collections
+to draw on (folders, or git repositories it downloads), which songs, and its settings.
 `strumbook build SONGS_DIR -o BOOK.pdf` is a shortcut for every `.cho` file in one
 folder.
 
@@ -27,18 +28,17 @@ sorted by title (or `{sorttitle}`) with chord diagrams down the side, a chord re
 page and Credits. Choruses are marked, and a small line under each title gives the
 song's subtitle and its words, music and translation credits. Every page after the
 title page has a strip of links along the bottom to the index, each letter and the
-reference page, unless a book file keeps its songs in a listed order. A book file in
-the `setlist` style makes a gig book instead: a running order, then each set's songs,
-with optional break pages and spares at the back.
+reference page. A StrumBook file of type `set-list` makes a gig book instead: a
+running order, then each set's songs, with optional break pages and spares at the back.
 
-Options, which override a book file's own settings:
+Options, which override a StrumBook file's own settings:
 
-- `--title TEXT`: the book's title (default: the book file's title, or the folder's
-  name).
+- `--title TEXT`: the book's title (default: the StrumBook file's title, or the
+  folder's name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
-- `--style songbook|setlist`: the book's style (default songbook). A set list needs a
-  book file, and leaves out the index, link strip, reference page and Credits unless
-  you turn them on.
+- `--type song-library|set-list`: the type of book (default song-library, A to Z). A
+  set list needs a StrumBook file, and leaves out the index, link strip, reference
+  page and Credits unless you turn them on.
 - `--title-page on|off`: include the title page (default on).
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).
@@ -60,10 +60,11 @@ diagram for and ChordPro directives it doesn't know. Chords are played as writte
 
 To see a full book, `make christmas` builds all 28 carols from
 [Christmas Songs](https://github.com/pathawks/Christmas-Songs) into
-`output/christmas-carols.pdf`, from the book file `books/christmas.book.toml`.
+`output/christmas-carols.pdf`, from the StrumBook file
+`books/christmas.strumbook.toml`.
 
-StrumBook needs network access only to download a book file's `git` sources, and
-`git` installed for them. It installs on macOS, Linux and Windows
+[Git](https://git-scm.com) is optional: StrumBook needs it, and the network, only to
+download a StrumBook file's `git` sources. It installs on macOS, Linux and Windows
 (x64), but not yet on Windows on ARM: its Typst renderer has no package for it.
 
 ## How work happens
@@ -92,7 +93,7 @@ StrumBook builds on the great work of these projects:
 | [typst-py](https://github.com/messense/typst-py) | Bundles the Typst compiler as a Python package, so installing StrumBook needs nothing else. |
 | [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) | The Braille Institute's typeface, designed to be easy to tell letters apart. It keeps lyrics clear on a tablet at arm's length. |
 | [ChordPro](https://www.chordpro.org) | The song format: lyrics with chords inline, which StrumBook reads. |
-| [Git](https://git-scm.com) | Downloads the song collections a book file names, with the book maker's own sign-in. |
+| [Git](https://git-scm.com) | Downloads the song collections a StrumBook file names, if they're in git, with the book maker's own sign-in. |
 | [Christmas Songs](https://github.com/pathawks/Christmas-Songs) | Public-domain carols in ChordPro, used as test songs. |
 | [uv](https://docs.astral.sh/uv/) | Sets up the Python environment and pins every dependency. |
 | [pytest](https://pytest.org) | Runs the tests. |
