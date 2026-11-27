@@ -9,7 +9,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from strumbook.book import BuildError, read_book
-from strumbook.bookfile import CHOICES, STYLES, BookFile, read_book_file
+from strumbook.bookfile import CHOICES, TYPES, BookFile, read_book_file
 
 _ON_OFF = {"on": True, "off": False}
 
@@ -25,22 +25,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", title="commands")
     build = commands.add_parser(
         "build",
-        help="build a tablet songbook PDF from a book file or a folder of songs",
-        description="Build a tablet songbook PDF from a book file (.book.toml), or "
-        "from every .cho file in a folder. Options given here override the book "
+        help="build a tablet songbook PDF from a StrumBook file or a folder of songs",
+        description="Build a tablet songbook PDF from a StrumBook file "
+        "(.strumbook.toml), or "
+        "from every .cho file in a folder. Options given here override the StrumBook "
         "file's [build] settings.",
     )
-    build.add_argument("book", type=Path, metavar="BOOK.book.toml|SONGS_DIR")
+    build.add_argument("book", type=Path, metavar="BOOK.strumbook.toml|SONGS_DIR")
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
     build.add_argument(
         "--title",
-        help="the book's title (default: the book file's title, or the folder's name)",
+        help="the book's title (default: the StrumBook file's title, or the folder's name)",
     )
     build.add_argument(
         "--edition", help="the edition line on the title page (default: today's date)"
     )
     build.add_argument(
-        "--style", choices=list(STYLES), help="the book's style (default: songbook)"
+        "--type",
+        choices=list(TYPES),
+        help="the type of book (default: song-library, A to Z)",
     )
     build.add_argument(
         "--title-page", choices=_ON_OFF, help="include the title page (default on)"
@@ -73,18 +76,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.book.is_file() or args.book.suffix == ".toml":
             recipe = read_book_file(args.book)
         else:  # the shortcut: every song in one folder
-            recipe = BookFile(read_book(args.book), "songbook", None, {})
+            recipe = BookFile(read_book(args.book), "song-library", None, {})
         book = recipe.book
         if args.title is not None:
             book = replace(book, title=args.title)
-        # Settings layers: the style's defaults, the book file's [build], then
+        # Settings layers: the type's defaults, the StrumBook file's [build], then
         # options given here.
         given = {
             key: _ON_OFF.get(value, value)
-            for key in STYLES["songbook"]
+            for key in TYPES["song-library"]
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
-        settings = {**STYLES[args.style or recipe.style], **recipe.build, **given}
+        settings = {**TYPES[args.type or recipe.type], **recipe.build, **given}
         for warning in book.warnings:
             print(f"warning: {warning}", file=sys.stderr)
         render(

@@ -1,7 +1,7 @@
 """Song collections from git: cloned into the user's cache with the system's `git`.
 
-A book file is someone else's text, so only https and ssh addresses reach `git`, always
-after `--`, and a book file can never add `git` options.
+A StrumBook file is someone else's text, so only https and ssh addresses reach `git`,
+always after `--`, and a StrumBook file can never add `git` options.
 """
 
 import hashlib

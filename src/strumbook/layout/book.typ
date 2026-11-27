@@ -153,9 +153,7 @@
   let number = text(15pt, weight: "bold", fill: red, context counter(page).display())
   if back != none and not measuring { number = link(back, number) }
   place(top + right, dx: -side, dy: 13mm, number)
-  if data.navigation and not measuring {
-    place(bottom + left, dx: side, dy: -5mm, strip(current))
-  }
+  if not measuring { place(bottom + left, dx: side, dy: -5mm, strip(current)) }
 }
 
 // Reports a page span to render.py in measure mode.
@@ -247,7 +245,7 @@
   #v(4mm)
   #columns(if measuring { 1 } else { data.index_columns }, gutter: 8mm, {
     let previous = none
-    for song in data.index {
+    for song in data.songs {
       if song.letter != previous { group-head(song.letter) }
       previous = song.letter
       let target = label("song-" + song.id)
@@ -342,7 +340,10 @@
     ("Atkinson Hyperlegible", "set the words, in the Braille Institute's typeface made to be easy to read",
       "https://www.brailleinstitute.org/freefont/"),
   )
-  for url in data.sources { made.push(("Songs", "came from this collection", url)) }
+  // Every source, by name; only a public link is shown, never a git address.
+  for s in data.sources {
+    made.push((s.name, "songs from this collection", if s.link != "" { s.link }))
+  }
   let address(url) = url.trim("https://", at: start).trim("http://", at: start).trim("/", at: end)
   section-page[
     #if credited.len() == 0 { opening }
@@ -355,10 +356,14 @@
       columns: (auto, 1fr),
       inset: (left: 0mm, right: 5mm, y: 2.6mm),
       stroke: (bottom: 0.5pt + rule, x: none, top: none),
-      ..made.map(((name, what, url)) => (
-        link(url, text(11pt, weight: "bold", name)),
-        [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))],
-      )).flatten()
+      ..made.map(((name, what, url)) => {
+        let name = text(11pt, weight: "bold", name)
+        if url == none {
+          (name, [#text(10pt, what) \ #text(9pt, fill: muted)[No public link]])
+        } else {
+          (link(url, name), [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))])
+        }
+      }).flatten()
     )
   ]
 }

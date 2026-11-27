@@ -1,6 +1,6 @@
-"""Book files: a TOML recipe for one book, naming its sources, songs and settings.
+"""StrumBook files: a TOML recipe for one book, naming its sources, songs and settings.
 
-See docs/book-files.md for the format.
+See docs/strumbook-files.md for the format.
 """
 
 import re
@@ -11,9 +11,9 @@ from pathlib import Path
 from strumbook.book import Book, BuildError, make_book, song_files
 from strumbook.sources import fetch
 
-# Each style's defaults for the [build] settings; the first layer of three.
-STYLES = {
-    "songbook": {
+# Each type's defaults for the [build] settings; the first layer of three.
+TYPES = {
+    "song-library": {
         "title-page": True,
         "credits": True,
         "mid-word-chords": "inline",
@@ -22,16 +22,16 @@ STYLES = {
 }
 CHOICES = {"mid-word-chords": ("inline", "above")}
 
-_BOOK_KEYS = {"title", "style", "edition", "subtitle", "notes"}
+_BOOK_KEYS = {"title", "type", "edition", "subtitle", "notes"}
 _SOURCE_KEYS = {"path", "git", "pin", "folder", "link"}
-_SONGS_KEYS = {"include", "pick", "exclude", "order"}
+_SONGS_KEYS = {"include", "pick", "exclude"}
 _NAME = re.compile(r"[a-z0-9-]+")
 
 
 @dataclass(frozen=True)
 class BookFile:
     book: Book
-    style: str
+    type: str
     edition: str | None
     build: dict[str, object]  # the [build] settings, checked
 
@@ -51,14 +51,16 @@ def read_book_file(path: Path) -> BookFile:
     warnings += _unknown(book, _BOOK_KEYS, "[book]")
     title = _text(book, "title", "[book]")
     if not title:
-        raise BuildError('the book file needs a title: add title = "…" under [book]')
-    style = _text(book, "style", "[book]") or "songbook"
-    if style not in STYLES:
-        raise BuildError(f"unknown style {style!r}: use {_either(STYLES)}")
+        raise BuildError(
+            'the StrumBook file needs a title: add title = "…" under [book]'
+        )
+    kind = _text(book, "type", "[book]") or "song-library"
+    if kind not in TYPES:
+        raise BuildError(f"unknown type {kind!r}: use {_either(TYPES)}")
 
     build = _table(data, "build")
-    warnings += _unknown(build, set(STYLES["songbook"]), "[build]")
-    build = {k: v for k, v in build.items() if k in STYLES["songbook"]}
+    warnings += _unknown(build, set(TYPES["song-library"]), "[build]")
+    build = {k: v for k, v in build.items() if k in TYPES["song-library"]}
     for key, value in build.items():
         expected = CHOICES.get(key)
         if expected is None and not isinstance(value, bool):
@@ -68,8 +70,8 @@ def read_book_file(path: Path) -> BookFile:
 
     sources = _table(data, "sources")
     if not sources:
-        raise BuildError("the book file has no [sources.<name>] tables")
-    folders, links, pins = {}, [], {}
+        raise BuildError("the StrumBook file has no [sources.<name>] tables")
+    folders, credits, pins = {}, [], {}
     for name, source in sources.items():
         if not _NAME.fullmatch(name) or not isinstance(source, dict):
             raise BuildError(
@@ -79,8 +81,7 @@ def read_book_file(path: Path) -> BookFile:
         folder, link, more = _source(name, source, path.parent)
         folders[name] = folder
         warnings += more
-        if link:
-            links.append(link)
+        credits.append((name, link))
         # Sources sharing an address share one checkout, so they must agree on its pin.
         url, pin = source.get("git"), source.get("pin")
         if url and pins.setdefault(url, pin) != pin:
@@ -88,9 +89,6 @@ def read_book_file(path: Path) -> BookFile:
 
     songs = _table(data, "songs")
     warnings += _unknown(songs, _SONGS_KEYS, "[songs]")
-    order = _text(songs, "order", "[songs]") or "a-z"
-    if order not in ("a-z", "listed"):
-        raise BuildError('[songs] order must be "a-z" or "listed"')
     include = songs.get("include", [])
     if include == "all":
         include = list(folders)
@@ -116,26 +114,25 @@ def read_book_file(path: Path) -> BookFile:
     chosen = list(dict.fromkeys(p for p in picked + included if p not in excluded))
     if not chosen:
         raise BuildError(
-            "the book file chooses no songs: add include or pick under [songs]"
+            "the StrumBook file chooses no songs: add include or pick under [songs]"
         )
     return BookFile(
         book=make_book(
             title,
             chosen,
-            a_to_z=order == "a-z",
             subtitle=_text(book, "subtitle", "[book]"),
             notes=_text(book, "notes", "[book]"),
-            sources=tuple(dict.fromkeys(links)),
+            sources=tuple(credits),
             warnings=tuple(warnings),
         ),
-        style=style,
+        type=kind,
         edition=_text(book, "edition", "[book]") or None,
         build=build,
     )
 
 
 def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
-    """The songs folder for one source, the link for Credits, and warnings."""
+    """The songs folder for one source, its link for Credits (or ""), and warnings."""
     where = f"[sources.{name}]"
     warnings = _unknown(source, _SOURCE_KEYS, where)
     local, url = _text(source, "path", where), _text(source, "git", where)
@@ -162,7 +159,7 @@ def _source(name: str, source: dict, base: Path) -> tuple[Path, str, list[str]]:
         raise BuildError(f"{where} folder {sub!r} is outside the source")
     if not song_files(folder):
         raise BuildError(f"source {name!r} has no songs: no .cho files in {folder}")
-    return folder, link or url, warnings
+    return folder, link, warnings
 
 
 def _song(ref: object, folders: dict[str, Path], key: str) -> tuple[Path | None, str]:

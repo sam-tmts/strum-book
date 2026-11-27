@@ -16,7 +16,6 @@ from strumbook.book import (
     BuildError,
     diagram_columns,
     show_diagrams,
-    sort_key,
 )
 
 LAYOUT = Path(__file__).parent / "layout"
@@ -56,24 +55,12 @@ def render(
         "count": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
         "edition": edition,
         "built": built,
-        "sources": list(book.sources),
+        "sources": [{"name": name, "link": link} for name, link in book.sources],
         "title_page": title_page,
         "credits": credits,
         "tuning": "GCEA",
         "mid_word": mid_word,
         "songs": songs,
-        # The index is always A to Z, whatever the book's order.
-        "index": [
-            {
-                "id": s.id,
-                "title": s.song.title,
-                "artist": s.song.artist,
-                "letter": s.letter,
-            }
-            for s in sorted(book.songs, key=lambda s: sort_key(s.song))
-        ],
-        # The strip jumps to letters, so only an A-to-Z book has one.
-        "navigation": book.a_to_z,
         "letters": _letters(book),
         "reference": reference,
     }
