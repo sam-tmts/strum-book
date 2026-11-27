@@ -1,6 +1,7 @@
-"""Issue #12: book files with local `path` sources, on the fixture carols and
+"""Issue #12: StrumBook files with local `path` sources, on the fixture carols and
 synthetic songs. Git sources are in test_git_sources.py."""
 
+import re
 import shutil
 from datetime import date
 from pathlib import Path
@@ -30,6 +31,7 @@ from pypdf import PdfReader
 
 from strumbook.cli import main
 
+CHRISTMAS_LINK = "https://github.com/pathawks/Christmas-Songs"
 NOTES = "Bring mince pies.\n\nCarols marked with a capo are played as written.\n"
 
 
@@ -37,18 +39,19 @@ def titles(reader: PdfReader) -> list[str]:
     return book_map(reader).titles
 
 
-# The book described by a book file.
+# The book described by a StrumBook file.
 
 
-def test_the_christmas_style_example_builds_the_same_book_plus_subtitle_and_notes(
+def test_the_christmas_example_builds_the_same_book_plus_subtitle_and_notes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     folder = built(FIXTURES, tmp_path / "folder.pdf", capsys=capsys)
     book = write_book(
         tmp_path,
+        sources=CAROLS_SOURCE + f"link = '{CHRISTMAS_LINK}'\n",
         title="Christmas Carols",
         book=(
-            'style = "songbook"\nedition = "2026-12-01"\n'
+            'type = "song-library"\nedition = "2026-12-01"\n'
             f'subtitle = "Christmas 2026"\nnotes = """\n{NOTES}"""'
         ),
         build="title-page = true\ncredits = true",
@@ -70,6 +73,9 @@ def test_the_christmas_style_example_builds_the_same_book_plus_subtitle_and_note
         "Carols marked with a capo are played as written.",
     ]:
         assert text in title_page
+    about = about_of(reader)
+    assert "carols" in about  # Credits names the source
+    assert "github.com/pathawks/Christmas-Songs" in about
     assert title_page.index("Bring mince pies.") < title_page.index("Carols marked")
     assert reader.metadata is not None
     assert reader.metadata.title == "Christmas Carols"
@@ -116,13 +122,15 @@ def test_songs_folder_is_songs_if_it_exists_and_folder_overrides_it(
     write_songs(collection, {"outer": "{title:Outer Song}\n[G]La\n"})
     source = f"[sources.c]\npath = '{collection}'\n"
     default = built(
-        write_book(tmp_path, sources=source, name="a.book.toml"),
+        write_book(tmp_path, sources=source, name="a.strumbook.toml"),
         tmp_path / "a.pdf",
         capsys=capsys,
     )
     assert titles(default) == ["Title", "Index", "Inner Song", "Reference", "Credits"]
     chosen = built(
-        write_book(tmp_path, sources=source + "folder = 'other'\n", name="b.book.toml"),
+        write_book(
+            tmp_path, sources=source + "folder = 'other'\n", name="b.strumbook.toml"
+        ),
         tmp_path / "b.pdf",
         capsys=capsys,
     )
@@ -138,7 +146,7 @@ def test_a_collection_with_no_songs_folder_uses_its_top_level(
     assert titles(reader) == ["Title", "Index", "Flat Song", "Reference", "Credits"]
 
 
-# Choosing and ordering songs.
+# Choosing songs: always A to Z.
 
 
 def two_collections(tmp_path: Path) -> str:
@@ -238,17 +246,13 @@ def test_exclude_leaves_songs_out_of_what_include_brings_in(
     assert "Veni, Emmanuel" not in text_of(reader)
 
 
-def test_listed_order_follows_pick_but_the_index_stays_a_to_z(
+def test_a_picked_book_is_a_to_z_and_so_is_its_index(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    book = write_book(
-        tmp_path,
-        songs=f'pick = ["{BETHLEHEM}", "{EMMANUEL}", "{AWAY}"]\norder = "listed"',
-    )
+    book = write_book(tmp_path, songs=f'pick = ["{BETHLEHEM}", "{EMMANUEL}", "{AWAY}"]')
     reader = built(book, tmp_path / "book.pdf", capsys=capsys)
     pages = book_map(reader)
-    listed = [CAROLS[2], CAROLS[1], CAROLS[0]]
-    assert pages.titles == ["Title", "Index", *listed, "Reference", "Credits"]
+    assert pages.titles == FULL_BOOK
     assert pages.pages == sorted(pages.pages)
     az = [pages.first_page(title) for title in CAROLS]
     assert index_targets(reader, pages.first_page("Index")) == [
@@ -256,16 +260,20 @@ def test_listed_order_follows_pick_but_the_index_stays_a_to_z(
         pages.first_page("Reference"),
         pages.first_page("Credits"),
     ]
+    for n in range(1, pages.page_count):  # and it keeps the link strip
+        assert len(split_links(reader, n)[0]) == STRIP_CELLS, f"page {n}"
 
 
-def test_order_a_to_z_can_be_asked_for_by_name(
+def test_pick_and_include_together_are_one_a_to_z_book(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(
-        tmp_path, songs=f'pick = ["{BETHLEHEM}", "{AWAY}"]\norder = "a-z"'
+        tmp_path,
+        sources=two_collections(tmp_path),
+        songs='include = ["one"]\npick = ["two:Kiwi", "two:Apple Tree"]',
     )
     reader = built(book, tmp_path / "book.pdf", capsys=capsys)
-    assert titles(reader)[2:4] == ["Away In A Manger", "O Little Town Of Bethlehem"]
+    assert titles(reader)[2:-2] == ["Apple Tree", "Kiwi", "Mango", "Zebra Song"]
 
 
 def test_same_file_name_in_two_sources_appears_twice_with_the_artist_to_tell_apart(
@@ -329,29 +337,7 @@ def test_a_picked_a_to_z_book_also_has_the_strip(
         assert len(split_links(reader, n)[0]) == STRIP_CELLS, f"page {n}"
 
 
-def test_a_listed_book_has_no_link_strip_but_index_and_title_links_work(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    book = write_book(
-        tmp_path,
-        songs=f'pick = ["{BETHLEHEM}", "{EMMANUEL}", "{AWAY}"]\norder = "listed"',
-    )
-    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
-    pages = book_map(reader)
-    for n in range(pages.page_count):
-        assert split_links(reader, n)[0] == [], f"page {n} has a strip"
-    index_pages = set(pages.pages_of("Index"))
-    credits = set(pages.pages_of("Credits"))
-    entries = index_targets(reader, pages.first_page("Index"))
-    assert len(entries) == len(CAROLS) + 2  # songs, Reference, Credits
-    for title in CAROLS:
-        for n in pages.pages_of(title):
-            _, others = split_links(reader, n)
-            assert others, f"{title} page {n} has no title/page-number link"
-            assert {link.target for link in others} - credits <= index_pages
-
-
-# Settings: style defaults, then [build], then command-line options.
+# Settings: type defaults, then [build], then command-line options.
 
 
 def test_build_settings_in_the_book_file_apply(
@@ -420,31 +406,47 @@ def test_edition_on_the_command_line_overrides_the_book_file(
     assert "2026-12-01" not in page_text(over, range(1))
 
 
-def test_a_build_setting_survives_a_style_given_on_the_command_line(
+def test_a_build_setting_survives_a_type_given_on_the_command_line(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(tmp_path, build="credits = false\ntitle-page = false")
-    reader = built(book, tmp_path / "book.pdf", "--style", "songbook", capsys=capsys)
+    reader = built(book, tmp_path / "book.pdf", "--type", "song-library", capsys=capsys)
     assert titles(reader) == ["Index", *CAROLS, "Reference"]
 
 
-def test_style_songbook_is_accepted_for_a_folder_too(
+def test_type_song_library_is_accepted_for_a_folder_too(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    reader = built(FIXTURES, tmp_path / "b.pdf", "--style", "songbook", capsys=capsys)
+    reader = built(
+        FIXTURES, tmp_path / "b.pdf", "--type", "song-library", capsys=capsys
+    )
     assert titles(reader) == FULL_BOOK
 
 
-def test_an_unknown_style_on_the_command_line_is_a_usage_error(
+def test_an_unknown_type_on_the_command_line_is_a_usage_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     with pytest.raises(SystemExit) as exc:
-        main(["build", str(FIXTURES), "-o", str(tmp_path / "b.pdf"), "--style", "gig"])
+        main(["build", str(FIXTURES), "-o", str(tmp_path / "b.pdf"), "--type", "gig"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
     assert "usage:" in err
     assert "invalid choice" in err
     assert not (tmp_path / "b.pdf").exists()
+
+
+@pytest.mark.parametrize("value", ["songbook", "song-library"])
+def test_style_option_is_gone_and_is_a_usage_error(
+    value: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "b.pdf"
+    with pytest.raises(SystemExit) as exc:
+        main(["build", str(FIXTURES), "-o", str(out), "--style", value])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "unrecognized arguments" in err
+    assert "--style" in err
+    assert not out.exists()
 
 
 # `strumbook build SONGS_DIR` and the removal of --source.
@@ -456,10 +458,12 @@ def test_a_folder_build_still_works_and_has_no_source_line(
     reader = built(FIXTURES, tmp_path / "b.pdf", capsys=capsys)
     assert titles(reader) == FULL_BOOK
     credits = book_map(reader).pages_of("Credits")
-    assert "Songs came from" not in page_text(reader, credits)
+    text = page_text(reader, credits)
+    assert "Songs came from" not in text
+    assert "No public link" not in text  # a folder has no sources to list
 
 
-@pytest.mark.parametrize("target", ["folder", "book-file"])
+@pytest.mark.parametrize("target", ["folder", "strumbook-file"])
 def test_source_option_is_gone_and_is_a_usage_error(
     target: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -483,7 +487,7 @@ def about_of(reader: PdfReader) -> str:
     return page_text(reader, range(last, last + 1))
 
 
-def test_a_sources_link_is_credited_with_a_clickable_address(
+def test_a_source_is_listed_by_name_with_its_link_shown_and_clickable(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     link = "https://example.org/our-songs"
@@ -491,8 +495,9 @@ def test_a_sources_link_is_credited_with_a_clickable_address(
     reader = built(book, tmp_path / "book.pdf", capsys=capsys)
     assert link in uris(reader)
     about = about_of(reader)
-    assert "Songs came from" in about
+    assert "carols" in about
     assert "example.org/our-songs" in about
+    assert "No public link" not in about
 
 
 def test_an_http_link_is_accepted(
@@ -503,7 +508,7 @@ def test_an_http_link_is_accepted(
     assert link in uris(built(book, tmp_path / "book.pdf", capsys=capsys))
 
 
-def test_a_path_source_without_a_link_is_left_out_of_credits(
+def test_a_path_source_without_a_link_is_listed_as_no_public_link(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     reader = built(write_book(tmp_path), tmp_path / "book.pdf", capsys=capsys)
@@ -512,11 +517,13 @@ def test_a_path_source_without_a_link_is_left_out_of_credits(
         "https://typst.app",
         "https://www.brailleinstitute.org/freefont/",
     }
-    assert "Songs came from" not in about_of(reader)
+    about = about_of(reader)
+    assert "carols" in about
+    assert "No public link" in about
     assert str(FIXTURES) not in text_of(reader)  # a private path is not printed
 
 
-def test_only_the_sources_with_a_link_are_credited(
+def test_every_source_is_listed_by_name_linked_or_not(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     sources = two_collections(tmp_path).replace(
@@ -528,7 +535,11 @@ def test_only_the_sources_with_a_link_are_credited(
     found = uris(reader)
     assert "https://example.org/two" in found
     assert not any(str(tmp_path) in uri for uri in found)
-    assert "example.org/two" in about_of(reader)
+    about = about_of(reader)
+    assert re.search(r"\bone\b", about)
+    assert re.search(r"\btwo\b", about)
+    assert "example.org/two" in about
+    assert about.count("No public link") == 1  # only source one lacks a link
 
 
 @pytest.mark.parametrize(
@@ -590,7 +601,7 @@ def test_each_error_names_the_problem_and_leaves_no_pdf(
 def test_a_book_file_with_no_title_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    book = tmp_path / "untitled.book.toml"
+    book = tmp_path / "untitled.strumbook.toml"
     book.write_text(f'[book]\n\n{CAROLS_SOURCE}\n[songs]\ninclude = "all"\n')
     out = tmp_path / "book.pdf"
     code, err = run(book, out, capsys=capsys)
@@ -600,21 +611,21 @@ def test_a_book_file_with_no_title_is_an_error(
 def test_a_book_file_that_is_not_toml_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    book = tmp_path / "broken.book.toml"
+    book = tmp_path / "broken.strumbook.toml"
     book.write_text("[book\ntitle = = 'x'\n", encoding="utf-8")
     out = tmp_path / "book.pdf"
     code, err = run(book, out, capsys=capsys)
-    assert_clean_error(code, err, out, "broken.book.toml")
-    assert "folder" not in err  # read as a book file, not taken for a songs folder
+    assert_clean_error(code, err, out, "broken.strumbook.toml")
+    assert "folder" not in err  # read as a StrumBook file, not taken for a songs folder
 
 
 def test_a_missing_book_file_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     out = tmp_path / "book.pdf"
-    code, err = run(tmp_path / "missing.book.toml", out, capsys=capsys)
-    assert_clean_error(code, err, out, "missing.book.toml")
-    assert "folder" not in err  # it is named as a book file, not a songs folder
+    code, err = run(tmp_path / "missing.strumbook.toml", out, capsys=capsys)
+    assert_clean_error(code, err, out, "missing.strumbook.toml")
+    assert "folder" not in err  # it is named as a StrumBook file, not a songs folder
 
 
 def test_bad_chordpro_builds_what_it_can_with_warnings(
@@ -642,6 +653,8 @@ def test_bad_chordpro_builds_what_it_can_with_warnings(
     ("place", "key", "args"),
     [
         ("book", "flavour", {"book": 'flavour = "mint"'}),
+        ("old-style", "style", {"book": 'style = "songbook"'}),
+        ("old-order", "order", {"songs": 'include = "all"\norder = "listed"'}),
         ("sources", "sparkle", {"sources": CAROLS_SOURCE + "sparkle = 'yes'\n"}),
         ("songs", "shuffle", {"songs": 'include = "all"\nshuffle = true'}),
         ("build", "glitter", {"build": "glitter = true"}),
@@ -670,7 +683,7 @@ def test_a_clean_book_file_prints_no_warnings(
 ) -> None:
     book = write_book(
         tmp_path,
-        book='style = "songbook"\nedition = "2026"\nsubtitle = "s"\nnotes = "n"',
+        book='type = "song-library"\nedition = "2026"\nsubtitle = "s"\nnotes = "n"',
         build="title-page = true\ncredits = true\nmid-word-chords = 'inline'\n"
         "pdf-tags = true",
     )
@@ -744,7 +757,7 @@ def test_exclude_of_a_song_that_is_not_there_is_a_warning(
     assert not error_lines(err)
 
 
-def test_each_address_is_credited_once(
+def test_two_sources_with_the_same_link_are_two_rows(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     link = "https://example.org/dup"
@@ -759,16 +772,17 @@ def test_each_address_is_credited_once(
         write_book(
             tmp_path,
             sources=CAROLS_SOURCE + f"link = '{link}'\n",
-            name="single.book.toml",
+            name="single.strumbook.toml",
         ),
         tmp_path / "single.pdf",
         capsys=capsys,
     )
     assert annotation_count(single, link) >= 1
-    assert annotation_count(reader, link) == annotation_count(single, link)
+    assert annotation_count(reader, link) == 2 * annotation_count(single, link)
     about = about_of(reader)
-    assert about.count("Songs came from") == 1
-    assert about.count("example.org/dup") == 1
+    assert about.count("example.org/dup") == 2
+    assert re.search(r"\bone\b", about)
+    assert re.search(r"\btwo\b", about)
 
 
 def test_notes_keep_single_line_breaks_and_blank_lines_between_paragraphs(
@@ -786,13 +800,23 @@ def test_notes_keep_single_line_breaks_and_blank_lines_between_paragraphs(
 # Decisions recorded after review.
 
 
-def test_an_unknown_style_in_a_book_file_is_an_error_naming_it(
+def test_an_unknown_type_in_a_strumbook_file_is_an_error_naming_it(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    book = write_book(tmp_path, book='style = "gig"')
+    book = write_book(tmp_path, book='type = "gig"')
     out = tmp_path / "book.pdf"
     code, err = failing(book, out, capsys)
     assert_clean_error(code, err, out, "gig")
+
+
+def test_type_song_library_builds_like_the_default(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = write_book(tmp_path, book='type = "song-library"')
+    code, err = run(book, tmp_path / "b.pdf", capsys=capsys)
+    assert code == 0
+    assert warning_lines(err) == []  # `type` is a known key
+    assert titles(PdfReader(tmp_path / "b.pdf")) == FULL_BOOK
 
 
 def test_title_on_the_command_line_overrides_the_book_files_title(
@@ -835,15 +859,6 @@ def test_build_values_of_the_wrong_type_or_choice_are_errors_naming_the_key(
     assert_clean_error(code, err, out, key)
 
 
-def test_a_bad_order_value_is_an_error(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    book = write_book(tmp_path, songs='include = "all"\norder = "sideways"')
-    out = tmp_path / "book.pdf"
-    code, err = failing(book, out, capsys)
-    assert_clean_error(code, err, out, "order")
-
-
 def test_exclude_wins_over_pick(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -855,26 +870,6 @@ def test_exclude_wins_over_pick(
         "Title",
         "Index",
         "O Little Town Of Bethlehem",
-        "Reference",
-        "Credits",
-    ]
-
-
-def test_listed_order_puts_picks_first_then_what_include_adds_by_file_name(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    book = write_book(
-        tmp_path,
-        sources=two_collections(tmp_path),
-        songs='include = ["two"]\npick = ["one:Zebra Song"]\norder = "listed"',
-    )
-    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
-    assert titles(reader) == [
-        "Title",
-        "Index",
-        "Zebra Song",
-        "Apple Tree",
-        "Kiwi",
         "Reference",
         "Credits",
     ]

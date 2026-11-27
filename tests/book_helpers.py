@@ -1,4 +1,4 @@
-"""Helpers for building from book files, and a local bare git repo standing in for
+"""Helpers for building from StrumBook files, and a local bare git repo standing in for
 GitHub. Songs are the public-domain fixture carols or synthetic."""
 
 import os
@@ -35,7 +35,7 @@ def write_book(
     book: str = "",
     build: str = "",
     title: str = "Test Book",
-    name: str = "test.book.toml",
+    name: str = "test.strumbook.toml",
 ) -> Path:
     """Write a book file into <tmp_path>/books/ and return its path."""
     folder = tmp_path / "books"

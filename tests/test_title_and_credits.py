@@ -136,6 +136,7 @@ def test_about_page_says_how_the_book_was_made_with_links(
     assert "https://" not in about
     assert "freefont/" not in about
     assert "Songs came from" not in about  # a folder build has no source line
+    assert "No public link" not in about
 
 
 def test_credits_has_an_index_row_next_to_chord_shapes(
