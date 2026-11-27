@@ -20,8 +20,9 @@ use is the system's `git` fetching a StrumBook file's `git` sources.
 ## Building a book
 
 `strumbook build BOOK.strumbook.toml -o BOOK.pdf` builds the book a
-[StrumBook file](strumbook-files.md) describes; `strumbook build SONGS_DIR` is the
-shortcut for every song in one folder. Either way it writes one PDF
+[StrumBook file](strumbook-files.md) describes
+([ADR-0003](adr/0003-strumbook-files.md)); `strumbook build SONGS_DIR` is the shortcut
+for every song in one folder. Either way it writes one PDF
 ([ADR-0002](adr/0002-chordpro-format-typst-renderer.md)):
 
 ```mermaid
