@@ -232,3 +232,40 @@ def test_the_toml_form_keeps_valid_values_as_they_are(
     assert '\\"' not in err
     if not_shown:
         assert not_shown not in err
+
+
+# A key written twice is a general TOML error, even when each line alone looks like a
+# slip: no advice to rewrite the line, and no "on or off".
+REPEATED_KEYS = {
+    "a boolean written twice": (
+        '[book]\ntitle = "Carols"\n\n[build]\ncredits = false\ncredits = false\n',
+        6,
+        16,
+    ),
+    "a date written twice": (
+        '[book]\ntitle = "Carols"\nedition = 2026-12-01\nedition = 2026-12-01\n',
+        4,
+        21,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("text", "line", "column"), REPEATED_KEYS.values(), ids=REPEATED_KEYS.keys()
+)
+def test_a_key_written_twice_is_a_general_error_not_a_rewrite_suggestion(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    text: str,
+    line: int,
+    column: int,
+) -> None:
+    out = tmp_path / "book.pdf"
+    code, err = run(write(tmp_path, text), out, capsys=capsys)
+    assert_clean_error(code, err, out, NAME, "https://")
+    message = error_lines(err)[0]
+    assert says_line(message, line), err
+    assert says_column(message, column), err
+    assert "on or off" not in message, err
+    assert "needs" not in message, err
+    assert "(at line" not in message, err

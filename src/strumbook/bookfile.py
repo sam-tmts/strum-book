@@ -313,11 +313,13 @@ def _slip_advice(found: str) -> str | None:
     if match := _COLON.fullmatch(found):
         return f"{found!r} needs an equals sign: write {_toml_form(*match.groups())}"
     if match := _UNQUOTED.fullmatch(found):
-        form = _toml_form(*match.groups())
+        key, value = match.groups()
+        form = _toml_form(key, value)
         if form.endswith('"'):
             return f"{found!r} needs quotes around the text: write {form}"
-        return f"{found!r} needs true or false, not on or off: write {form}"
-    return None
+        if form != f"{key} = {value.strip()}":
+            return f"{found!r} needs true or false, not on or off: write {form}"
+    return None  # a value TOML can read, so the slip is elsewhere: a repeated key
 
 
 def _toml_form(key: str, value: str) -> str:
