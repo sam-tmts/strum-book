@@ -335,8 +335,9 @@
 
 // ---------- reference ----------
 
-// Two pages: the chord shapes in the book's tuning, then the notes in each chord.
-// Both carry the strip with Reference lit; the first is the Reference target.
+// The chord shapes in the book's tuning, then (with reference-notes on) the notes in
+// each chord. Each carries the strip with Reference lit; the first is the Reference
+// target.
 #let reference-page(body) = page(
   margin: (x: side, top: 16mm, bottom: bottom-m),
   foreground: page-furniture("ref"),
@@ -483,6 +484,9 @@
     if set-break != none { break-page(set-break) }
     song-page(song, song.show_diagrams, "")
   }
-  if data.reference_page { chart-page(); notes-page() }
+  if data.reference_page {
+    chart-page()
+    if data.reference_notes { notes-page() }
+  }
   if data.credits { credits-section() }
 }

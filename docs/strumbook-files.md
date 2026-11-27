@@ -173,6 +173,7 @@ on.
 | `index` | The A-to-Z index | on | off |
 | `navigation` | The strip of links along the bottom of each page | on | off |
 | `reference` | The Reference pages: chord shapes, and the notes in each chord | on | off |
+| `reference-notes` | The notes in each chord, when Reference is on | on | on |
 | `credits` | Credits and "About this book" | on | off |
 | `set-breaks` | A page before each set | — | on when there's more than one set, or spares |
 | `mid-word-chords` | `"inline"` or `"above"`: see the [README](../README.md) | `"inline"` | `"inline"` |

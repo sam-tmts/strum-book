@@ -63,6 +63,7 @@ def render(
         "chord_diagrams": settings["chords"],
         "index_page": settings["index"],
         "reference_page": settings["reference"],
+        "reference_notes": settings["reference-notes"],
         "credits": settings["credits"],
         "tuning": {"letters": tuning, "name": TUNING_NAMES[tuning]},
         "mid_word": settings["mid-word-chords"],
