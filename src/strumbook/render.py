@@ -20,7 +20,7 @@ from strumbook.book import (
     show_diagrams,
     sort_key,
 )
-from strumbook.chords import simplify_slash
+from strumbook.chords import SLASH_DEFAULTS, TUNING_NAMES, simplify_slash
 
 LAYOUT = Path(__file__).parent / "layout"
 _OPTIONS = {
@@ -30,7 +30,6 @@ _OPTIONS = {
 }
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
-_TUNING_NAMES = {"GCEA": "Standard", "DGBE": "Baritone"}
 
 
 def render(
@@ -45,9 +44,7 @@ def render(
     """Write `book` as a PDF of type `kind` ("song-library" or "set-list"), with the
     build `settings` (see bookfile.TYPES). `built` is the build date, for the About page."""
     tuning = settings["tuning"]
-    # Slash chords are simplified by default only on a re-entrant ukulele, which has
-    # no real bass string.
-    slash = settings["slash-chords"] or ("simplify" if tuning == "GCEA" else "")
+    slash = settings["slash-chords"] or SLASH_DEFAULTS[tuning]
     printed = simplify_slash if slash == "simplify" else str
     songs = [_song_data(s, tuning, printed) for s in book.songs]
     sections = _sections(book, songs, settings["set-breaks"])
@@ -70,7 +67,7 @@ def render(
         "index_page": settings["index"],
         "reference_page": settings["reference"],
         "credits": settings["credits"],
-        "tuning": {"letters": tuning, "name": _TUNING_NAMES[tuning]},
+        "tuning": {"letters": tuning, "name": TUNING_NAMES[tuning]},
         "mid_word": settings["mid-word-chords"],
         "sections": sections,
         "songs": songs,

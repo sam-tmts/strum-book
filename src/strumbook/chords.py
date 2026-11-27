@@ -12,8 +12,13 @@ from functools import cache
 from importlib.resources import files
 
 # The values --tuning and [build] tuning accept, in any case, and the tuning each
-# means.
+# means. A new tuning needs a line in each of these and a chords-<tuning>.json.
 TUNINGS = {"GCEA": "GCEA", "ukulele": "GCEA", "DGBE": "DGBE", "baritone": "DGBE"}
+# Each tuning's name in a book: "Standard (GCEA)".
+TUNING_NAMES = {"GCEA": "Standard", "DGBE": "Baritone"}
+# Each tuning's default for slash chords: simplified only on a re-entrant ukulele,
+# which has no real bass string.
+SLASH_DEFAULTS = {"GCEA": "simplify", "DGBE": "as-written"}
 
 _NAME = re.compile(r"([A-G][#b]?)([^/]*)(?:/([A-G][#b]?))?")
 _ENHARMONIC = {"C#": "Db", "D#": "Eb", "Gb": "F#", "G#": "Ab", "A#": "Bb"}

@@ -2,6 +2,7 @@
 chords. Built on the public-domain fixture carols and synthetic songs."""
 
 import json
+import re
 from importlib.resources import files
 from pathlib import Path
 
@@ -410,7 +411,7 @@ def test_a_bad_slash_chords_build_value_is_an_error_naming_the_key(
     assert_clean_error(code, err, out, "slash-chords")
 
 
-def test_an_unknown_bass_note_builds_without_error_or_warning(
+def test_an_unknown_bass_note_builds_without_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     songs = write_songs(tmp_path / "songs", {"a": "{title:Odd}\n[C/H]la [G/B]la\n"})
@@ -420,3 +421,58 @@ def test_an_unknown_bass_note_builds_without_error_or_warning(
         err = capsys.readouterr().err
         assert code == 0, err
         assert "error" not in err
+
+
+# The diagrams really are drawn in the book's tuning.
+
+# A fretted dot is a circle path drawn at its own offset, so the offsets of those
+# circles on a page say where every dot is, whatever the labels and headings say.
+_DOT = re.compile(r"q 1 0 0 -1 (\S+) (\S+) cm/c0 cs [\d. ]+ scn 0 3\.6850393 m")
+
+
+def _dots(reader: PdfReader, pages: range) -> list[tuple[str, str]]:
+    found = []
+    for n in pages:
+        stream = reader.pages[n].get_contents().get_data().decode("latin-1")
+        found += _DOT.findall(stream.replace("\n", " "))
+    return sorted(found)
+
+
+def _one_chord_book(tmp_path: Path, chord: str, tuning: str) -> PdfReader:
+    folder = tmp_path / f"{chord}-{tuning}"
+    write_songs(folder, {"a": f"{{title:Tune}}\n[{chord}]la la la\n"})
+    out = tmp_path / f"{chord}-{tuning}.pdf"
+    args = ["build", str(folder), "-o", str(out), "--tuning", tuning]
+    assert main(args + ["--slash-chords", "as-written"]) == 0
+    return PdfReader(out)
+
+
+def test_a_songs_diagram_dots_are_those_of_the_tunings_shape(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # G is 0003 on D G B E and C is 0003 on G C E A: the same dot, though the names
+    # differ. G on G C E A is 0232, so its dots are different.
+    def dots(chord: str, tuning: str) -> list[tuple[str, str]]:
+        reader = _one_chord_book(tmp_path, chord, tuning)
+        return _dots(reader, book_map(reader).pages_of("Tune"))
+
+    g_baritone, c_standard = dots("G", "DGBE"), dots("C", "GCEA")
+    assert len(g_baritone) == 1
+    assert g_baritone == c_standard
+    g_standard = dots("G", "GCEA")
+    assert len(g_standard) == 3
+    assert g_standard != g_baritone
+    assert dots("C", "DGBE") != c_standard  # C is 2010 on D G B E
+
+
+def test_the_reference_page_draws_the_tunings_shapes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    standard = built(_carols(tmp_path), tmp_path / "a.pdf", capsys=capsys)
+    baritone = built(
+        _carols(tmp_path), tmp_path / "b.pdf", "--tuning", "DGBE", capsys=capsys
+    )
+    a = _dots(standard, book_map(standard).pages_of("Reference"))
+    b = _dots(baritone, book_map(baritone).pages_of("Reference"))
+    assert a
+    assert a != b
