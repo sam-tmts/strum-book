@@ -337,7 +337,7 @@
 
 // ---------- reference ----------
 
-// The chord shapes in the book's tuning, then (with reference-notes on) the notes in
+// The chord shapes in each listed tuning, then (with reference-notes on) the notes in
 // each chord. Each carries the strip with Reference lit; the first is the Reference
 // target.
 #let reference-page(body) = page(

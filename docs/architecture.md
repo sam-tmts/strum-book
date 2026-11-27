@@ -68,9 +68,9 @@ flowchart LR
   each song with and without diagrams and apply the rules, then compile the book:
   title page, index, songs, Reference (a chord chart per listed tuning, then the
   notes in each chord) and Credits, or for a set list a running-order page and a
-  break page before each set. Each part can be turned off. The index is always A to Z. `render.py` works out
-  the link strip's cells: letters for a song library, set names for a set list, or
-  none. The notes in each chord are the one place chord names are real text, so a
+  break page before each set. Each part can be turned off. The index is always A to
+  Z. `render.py` works out the link strip's cells: letters for a song library, set
+  names for a set list, or none. The notes in each chord are the one place chord names are real text, so a
   search for one such as "Am7" finds that page; in songs they never are.
   The font, Atkinson Hyperlegible, is bundled in `layout/fonts/`; it has no sharp or
   flat signs, so ♯ and ♭ come from Libertinus Serif, which Typst bundles. System

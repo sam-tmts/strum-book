@@ -43,7 +43,8 @@ def render(
     built: str,
 ) -> None:
     """Write `book` as a PDF of type `kind` ("song-library" or "set-list"), with the
-    build `settings` (see bookfile.TYPES). `built` is the build date, for the About page."""
+    build `settings` (see bookfile.TYPES), with `reference-charts` already a list of
+    distinct tunings. `built` is the build date, for the About page."""
     tuning = settings["tuning"]
     slash = settings["slash-chords"] or SLASH_DEFAULTS[tuning]
     printed = simplify_slash if slash == "simplify" else str
