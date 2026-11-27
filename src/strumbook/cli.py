@@ -43,14 +43,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument(
         "--type",
         choices=list(TYPES),
-        help="the type of book (default: song-library, A to Z)",
+        help="song-library (A to Z, the default) or set-list (a gig's running "
+        "order); the defaults below are for song-library",
     )
-    build.add_argument(
-        "--title-page", choices=_ON_OFF, help="include the title page (default on)"
-    )
-    build.add_argument(
-        "--credits", choices=_ON_OFF, help="include Credits (default on)"
-    )
+    for option, what, default in [
+        ("title-page", "the title page", "on"),
+        ("index", "the index", "on; set-list off"),
+        ("navigation", "the strip of links along the bottom", "on; set-list off"),
+        ("reference", "the chord reference page", "on; set-list off"),
+        ("credits", "Credits", "on; set-list off"),
+        ("set-breaks", "a page before each set", "set-list: on for 2+ sets or spares"),
+    ]:
+        build.add_argument(
+            f"--{option}", choices=_ON_OFF, help=f"include {what} (default {default})"
+        )
     build.add_argument(
         "--mid-word-chords",
         choices=CHOICES["mid-word-chords"],
@@ -74,7 +80,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     built = f"{today.day} {today:%B %Y}"
     try:
         if args.book.is_file() or args.book.suffix == ".toml":
-            recipe = read_book_file(args.book)
+            recipe = read_book_file(args.book, args.type)
+        elif args.type == "set-list":
+            raise BuildError("the set-list type needs a StrumBook file with sets")
         else:  # the shortcut: every song in one folder
             recipe = BookFile(read_book(args.book), "song-library", None, {})
         book = recipe.book
@@ -87,18 +95,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             for key in TYPES["song-library"]
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
-        settings = {**TYPES[args.type or recipe.type], **recipe.build, **given}
+        settings = {**TYPES[recipe.type], **recipe.build, **given}
         for warning in book.warnings:
             print(f"warning: {warning}", file=sys.stderr)
+        edition = args.edition or recipe.edition or built
         render(
             book,
             args.output,
-            mid_word=settings["mid-word-chords"],
-            pdf_tags=settings["pdf-tags"],
-            edition=args.edition or recipe.edition or built,
+            settings,
+            kind=recipe.type,
+            edition=edition,
             built=built,
-            title_page=settings["title-page"],
-            credits=settings["credits"],
         )
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)

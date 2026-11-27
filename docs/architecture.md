@@ -20,8 +20,9 @@ use is the system's `git` fetching a StrumBook file's `git` sources.
 ## Building a book
 
 `strumbook build BOOK.strumbook.toml -o BOOK.pdf` builds the book a
-[StrumBook file](strumbook-files.md) describes; `strumbook build SONGS_DIR` is the
-shortcut for every song in one folder. Either way it writes one PDF
+[StrumBook file](strumbook-files.md) describes
+([ADR-0003](adr/0003-strumbook-files.md)); `strumbook build SONGS_DIR` is the shortcut
+for every song in one folder. Either way it writes one PDF
 ([ADR-0002](adr/0002-chordpro-format-typst-renderer.md)):
 
 ```mermaid
@@ -37,9 +38,10 @@ flowchart LR
 ```
 
 - **StrumBook files** (`bookfile.py`) are read with `tomllib`, checked, each source
-  resolved to a folder, and the songs chosen (`include`, `pick`, `exclude`); it returns
-  the book with the file's `[build]` settings. Unknown keys are warnings. It also holds
-  each type's default settings (`TYPES`).
+  resolved to a folder, and the songs chosen (`include`, `pick` and `exclude` for a
+  song library; sets, `pick` and `spares` for a set list); it returns the book with the
+  file's `[build]` settings. Unknown keys are warnings. It also holds each type's
+  default settings (`TYPES`).
 - **Sources** (`sources.py`) clone a `git` source into the user cache with the system's
   `git`, fetch the latest or check out the `pin`, and fall back to the cached copy with
   a warning when offline. Only `https` and ssh addresses reach `git`, after `--`.
@@ -49,16 +51,20 @@ flowchart LR
   `{words}`, `{music}` and `{translation}` and the variants real collections use
   (`{text}`, `{translated}`, `{Latin Text}` …). Metadata we don't show (key, capo …)
   and known oddities are ignored; other directives are skipped with a warning.
-- **Book model** (`book.py`) sorts the songs by sort title, ignoring case, and groups
-  each song's chords into diagrams: chords with the same fingering share one. Shapes come
-  from our own GCEA table (`chords.json`, read by `chords.py`). It also holds the two
-  rules for dropping a song's diagram column (`show_diagrams`). It knows nothing about
-  pages.
+- **Book model** (`book.py`) sorts the songs by sort title, ignoring case (a set list
+  keeps its running order and records its sets and spares as `Section`s over it), and
+  groups each song's chords into diagrams: chords with the same fingering share one.
+  Shapes come from our own GCEA table (`chords.json`, read by `chords.py`). It also
+  holds the two rules for dropping a song's diagram column (`show_diagrams`). It knows
+  nothing about pages.
 - **Page renderer** (`render.py`) is the only code that knows about Typst. It passes
   the book to `layout/book.typ` as JSON data, never as Typst markup, in three offline
   passes: outline the chord names to SVG (`layout/chord-names.typ`) so they stay out
   of the searchable text, measure each song with and without diagrams and apply the
-  rules, then compile the book: title page, index, songs, reference page and Credits.
+  rules, then compile the book: title page, index, songs, reference page and Credits,
+  or for a set list a running-order page and a break page before each set. Each part
+  can be turned off. The index is always A to Z. `render.py` works out the link
+  strip's cells: letters for a song library, set names for a set list, or none.
   The font, Atkinson Hyperlegible, is bundled in `layout/fonts/`; system fonts are
   ignored, so books look the same everywhere.
 - **CLI** (`cli.py`) layers the settings (the type's defaults, then the StrumBook
@@ -67,7 +73,7 @@ flowchart LR
 
 ## Planned
 
-To be built issue by issue: the `set-list` type for gig books, the RHS layout and
-build options, baritone (DGBE) diagrams, and a separate **importer** that drafts
-ChordPro from PDFs or pasted chords-over-lyrics text, for a person to check. Add
-modules when an issue needs them, not before.
+To be built issue by issue: the RHS layout and build options, baritone (DGBE)
+diagrams, and a separate **importer** that drafts ChordPro from PDFs or pasted
+chords-over-lyrics text, for a person to check. Add modules when an issue needs them,
+not before.

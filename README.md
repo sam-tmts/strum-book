@@ -4,8 +4,8 @@ Tools for building songbooks for ukulele groups and bands from collections of Ch
 songs: tablet-friendly PDFs with a tappable index, searchable text and chord diagrams
 for each instrument. The [problem statement](docs/problem-statement.md) explains why.
 
-**Status: early development.** It builds a book from a StrumBook file or one folder
-of songs, in one layout, with GCEA chord diagrams.
+**Status: early development.** It builds a song library or a gig set list from a
+StrumBook file, or a song library from one folder of songs, with GCEA chord diagrams.
 
 ## Try it
 
@@ -28,15 +28,22 @@ sorted by title (or `{sorttitle}`) with chord diagrams down the side, a chord re
 page and Credits. Choruses are marked, and a small line under each title gives the
 song's subtitle and its words, music and translation credits. Every page after the
 title page has a strip of links along the bottom to the index, each letter and the
-reference page.
+reference page. A StrumBook file of type `set-list` makes a gig book instead: a
+running order, then each set's songs, with optional break pages and spares at the back.
+
 Options, which override a StrumBook file's own settings:
 
 - `--title TEXT`: the book's title (default: the StrumBook file's title, or the
   folder's name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
-- `--type song-library`: the type of book; `song-library` (A to Z) is the only one so
-  far.
+- `--type song-library|set-list`: the type of book (default song-library, A to Z). A
+  set list needs a StrumBook file, and leaves out the index, link strip, reference
+  page and Credits unless you turn them on.
 - `--title-page on|off`: include the title page (default on).
+- `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
+  include each (default on).
+- `--set-breaks on|off`: a page before each set in a set list (default on when there's
+  more than one set, or spares).
 - `--credits on|off`: include Credits (default on): each song's credits, linked both
   ways with its credit line, then an "About this book" page saying how it was made.
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is

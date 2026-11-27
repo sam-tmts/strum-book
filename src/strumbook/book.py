@@ -39,6 +39,17 @@ class BookSong:
 
 
 @dataclass(frozen=True)
+class Section:
+    """A set in a set list, or its spares: the next `count` songs in book order,
+    which is why a book with sections is never sorted."""
+
+    name: str  # "" for the unnamed set a pick list makes
+    count: int
+    running_time: str = ""
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class Book:
     title: str
     songs: tuple[BookSong, ...]  # in book order
@@ -47,6 +58,7 @@ class Book:
     subtitle: str = ""
     notes: str = ""  # plain text; paragraphs separated by blank lines
     sources: tuple[tuple[str, str], ...] = ()  # for Credits: (name, link or "")
+    sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
 
 
 def group_diagrams(chord_names: list[str]) -> list[Diagram]:
@@ -100,9 +112,11 @@ def make_book(
     subtitle: str = "",
     notes: str = "",
     sources: tuple[tuple[str, str], ...] = (),
+    sections: tuple[Section, ...] = (),
     warnings: tuple[str, ...] = (),
 ) -> Book:
-    """A book of the songs in `paths`, sorted by title."""
+    """A book of the songs in `paths`, sorted by title, or with sections in the order
+    given."""
     songs: list[tuple[Song, Path]] = []
     found: list[str] = list(warnings)
     skipped: dict[str, list[str]] = {}
@@ -123,7 +137,8 @@ def make_book(
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
         found.append(f"skipped unknown directive {{{name}}} in {where}")
 
-    songs.sort(key=lambda s: (*sort_key(s[0]), s[1]))
+    if not sections:
+        songs.sort(key=lambda s: (*sort_key(s[0]), s[1]))
     return Book(
         title=title,
         songs=tuple(
@@ -143,6 +158,7 @@ def make_book(
         subtitle=subtitle,
         notes=notes,
         sources=sources,
+        sections=sections,
     )
 
 

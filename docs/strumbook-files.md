@@ -18,7 +18,7 @@ A StrumBook file's `type` says how the book is put together:
 | Type | The songs | What else is in the book |
 |------|-----------|--------------------------|
 | `song-library` (the default) | A to Z by title | A title page, an index, a strip of links along the bottom of each page, a chord reference page and Credits |
-| `set-list` | In the order they're played | Coming soon |
+| `set-list` | In the order they're played, perhaps in sets, with spares at the back | A title page, a running-order page and a break page before each set; the rest only if you turn it on |
 
 Some of the books people make with them:
 
@@ -71,6 +71,43 @@ pick = [
 ]
 ```
 
+A gig in two sets, with spares at the back:
+
+```toml
+[book]
+title = "Carols on the green"
+type = "set-list"
+edition = "2026-12-20"
+
+[sources.carols]
+path = "../Christmas-Songs"
+
+[[songs.set]]
+name = "Set 1"
+running-time = "25 min"
+notes = """
+Start 6:30. Away In A Manger twice if the children join in.
+"""
+songs = [
+  "carols:Away In A Manger",
+]
+
+[[songs.set]]
+name = "Set 2"
+running-time = "20 min"
+notes = """
+Collection buckets out before this set.
+"""
+songs = [
+  "carols:O Come O Come Emmanuel",
+]
+
+[songs]
+spares = [                       # at the back, under "Spares and encores"
+  "carols:O Little Town Of Bethlehem",
+]
+```
+
 ## The format
 
 A StrumBook file is [TOML](https://toml.io) and its name ends in `.strumbook.toml`, so
@@ -82,7 +119,7 @@ that runs over several lines.
 | Key | Meaning |
 |-----|---------|
 | `title` | The book's title. Required. |
-| `type` | `"song-library"`, the default and, for now, the only type. |
+| `type` | `"song-library"` (the default) or `"set-list"`: see [Set lists](#set-lists). |
 | `edition` | The edition line on the title page, such as a date. Default: the day you build it. |
 | `subtitle` | A line under the title on the title page. |
 | `notes` | Plain text for the title page, printed as typed, line breaks and all. Separate paragraphs with a blank line. |
@@ -110,8 +147,8 @@ up in a book you share; give a public collection a `link`.
 
 ### `[songs]`
 
-Any mix of these. A song is written as `source:file name`: the source's name, a colon,
-then the song's file name without `.cho`, spaces and all.
+A song is written as `source:file name`: the source's name, a colon, then the song's
+file name without `.cho`, spaces and all. A `song-library` takes any mix of these:
 
 | Key | Meaning |
 |-----|---------|
@@ -121,19 +158,49 @@ then the song's file name without `.cho`, spaces and all.
 
 A `song-library` sorts its songs A to Z by title, and so does its index. If two sources
 have a song with the same file name, the book has both; the index shows each one's
-artist.
+artist. A `set-list` chooses its songs differently: see [Set lists](#set-lists).
 
 ### `[build]`
 
 The same settings as the command-line options, without the `--` in front. On/off
-options take `true` or `false`.
+options take `true` or `false`. A set list leaves out the extras unless you turn them
+on.
+
+| Key | Meaning | `song-library` | `set-list` |
+|-----|---------|----------------|------------|
+| `title-page` | The title page | on | on |
+| `index` | The A-to-Z index | on | off |
+| `navigation` | The strip of links along the bottom of each page | on | off |
+| `reference` | The chord reference page | on | off |
+| `credits` | Credits and "About this book" | on | off |
+| `set-breaks` | A page before each set | — | on when there's more than one set, or spares |
+| `mid-word-chords` | `"inline"` or `"above"`: see the [README](../README.md) | `"inline"` | `"inline"` |
+| `pdf-tags` | Tag the PDF for screen readers | on | on |
+
+## Set lists
+
+A `set-list` book is for a gig: the songs in running order, with as little clutter as
+possible. It takes its songs from `[[songs.set]]` tables, one per set, in order:
 
 | Key | Meaning |
 |-----|---------|
-| `title-page` | Include the title page (default `true`). |
-| `credits` | Include Credits and "About this book" (default `true`). |
-| `mid-word-chords` | `"inline"` (default) or `"above"`: see the [README](../README.md). |
-| `pdf-tags` | Tag the PDF for screen readers (default `true`). |
+| `name` | The set's name, such as `"Set 1"`. Required. |
+| `songs` | Its songs, in running order. Required. |
+| `running-time` | Free text, such as `"25 min"`. |
+| `notes` | Plain text for the set's break page: songs to drop if running late, reminders, and so on. |
+
+`spares`, under `[songs]`, lists songs you might add or play as encores; they come
+after the last set, under "Spares and encores". A song can be in only one set or in
+the spares. A gig with no sets can use `pick` instead, as one unnamed set in the order
+listed. `include` and `exclude` are errors in a set list.
+
+The book has a title page, a running-order page listing each set and its songs (tap a
+song to go to it), then each set's songs. When `set-breaks` is on, each set and the
+spares start with a break page showing the name, running time and notes (an unnamed
+`pick` set has none). Each song's title and page number link back to the running
+order. With `navigation` on, the strip along the bottom links the running order, each
+set, the spares and (if it's on) Reference. A set list with only a `pick` list and no
+spares has no strip.
 
 ## Which setting wins
 
@@ -142,18 +209,23 @@ Settings come in three layers, each overriding the one before:
 1. **The type's defaults**, from `--type` if you give it, otherwise the StrumBook
    file's `type`, otherwise `song-library`.
 2. **The StrumBook file's `[build]` settings.** These still apply if you change the
-   type on the command line, because they were written into that book on purpose.
+   type on the command line, because they were written into that book on purpose. (A
+   book with sets only builds as a set list, and one with `include` only as a song
+   library.)
 3. **Options on the command line**, such as `--credits off`. `--title` and `--edition`
    override the StrumBook file's `title` and `edition` too.
 
 ## When something's wrong
 
 StrumBook stops with an error naming the problem, and writes no PDF, if the file isn't
-valid TOML or has no title, a song in `pick` doesn't exist (file names must match
-exactly, capitals included), a source is unknown, has no songs or can't be downloaded,
-or a setting has a value StrumBook doesn't accept. Keys it doesn't know only get a
-warning, so a StrumBook file written for a newer StrumBook still builds. Unknown chords
-and directives in a song are warnings, as when building from a folder.
+valid TOML or has no title, a song in `pick`, a set or the spares doesn't exist (file
+names must match exactly, capitals included), a song is in a set list twice, a set has
+no name or no songs, a source is unknown, has no songs or can't be downloaded, a
+setting has a value StrumBook doesn't accept, or a `[songs]` key belongs to the other
+type (`include` or `exclude` in a set list; sets or `spares` in a song library; sets
+and `pick` together). `--type set-list` needs a StrumBook file. Keys it doesn't know
+only get a warning, so a StrumBook file written for a newer StrumBook still builds.
+Unknown chords and directives in a song are warnings, as when building from a folder.
 
 ## Downloaded collections
 
