@@ -395,8 +395,12 @@
   #kicker(if data.type == "set-list" [SET LIST] else [SONGBOOK]) \
   #text(40pt, weight: "bold", data.title) \
   #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
-  #text(14pt, fill: muted, data.edition) \
-  #text(10pt, fill: muted)[Chord shapes: #data.tuning.name ukulele (#data.tuning.letters)]
+  #text(14pt, fill: muted, data.edition)
+  // The tuning, only in a book that has chord shapes in it.
+  #if data.chord_diagrams or data.reference_page {
+    linebreak()
+    text(10pt, fill: muted)[Chord shapes: #data.tuning.name ukulele (#data.tuning.letters)]
+  }
   #notes-block(data.notes)
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]

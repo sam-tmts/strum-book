@@ -58,7 +58,8 @@ flowchart LR
   (`chords-gcea.json`, `chords-dgbe.json`, read by `chords.py`, which also simplifies
   slash chords and reads `chord-notes.json`, the fixed notes in each chord). It also
   holds the chord chart's roots and types (`chord_chart`) and the two rules for
-  dropping a song's diagram column (`show_diagrams`). It knows nothing about pages.
+  dropping a song's diagram column (`show_diagrams`); with `chords` off, the renderer
+  drops every column. It knows nothing about pages.
 - **Page renderer** (`render.py`) is the only code that knows about Typst. It prints
   each chord name as the `slash-chords` setting says, asks the book model for the
   diagrams in the book's tuning, and passes the book to `layout/book.typ` as JSON
@@ -76,7 +77,8 @@ flowchart LR
   fonts are ignored, so books look the same everywhere.
 - **CLI** (`cli.py`) layers the settings (the type's defaults, then the StrumBook
   file's `[build]`, then command-line options) and prints warnings and errors as one
-  line each, with no traceback. `python -m strumbook` runs the same code.
+  line each, with no traceback. With `chords` off it leaves out the "no diagram"
+  warnings (`Book.missing_diagrams`). `python -m strumbook` runs the same code.
 
 ## Planned
 

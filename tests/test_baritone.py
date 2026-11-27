@@ -217,7 +217,7 @@ def test_a_set_list_title_page_names_the_tuning(
             tmp_path,
             songs=songs,
             book='type = "set-list"',
-            build=f'tuning = "{tuning}"',
+            build=f'tuning = "{tuning}"\nchords = true',  # a set list defaults to none
             name=f"{tuning}.strumbook.toml",
         )
         reader = built(book, tmp_path / f"{tuning}.pdf", capsys=capsys)
@@ -227,7 +227,12 @@ def test_a_set_list_title_page_names_the_tuning(
 def test_a_set_list_with_no_tuning_names_standard_on_its_title_page(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    book = write_book(tmp_path, songs=f'pick = ["{AWAY}"]', book='type = "set-list"')
+    book = write_book(
+        tmp_path,
+        songs=f'pick = ["{AWAY}"]',
+        book='type = "set-list"',
+        build="chords = true",  # a set list defaults to none
+    )
     reader = built(book, tmp_path / "gig.pdf", capsys=capsys)
     assert STANDARD_LINE in " ".join(reader.pages[0].extract_text().split())
 

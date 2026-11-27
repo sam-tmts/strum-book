@@ -60,6 +60,9 @@ class Book:
     notes: str = ""  # plain text; paragraphs separated by blank lines
     sources: tuple[tuple[str, str], ...] = ()  # for Credits: (name, link or "")
     sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
+    # The "no diagram for X" warnings: a subset of `warnings`, which matter only in a
+    # book with diagrams.
+    missing_diagrams: tuple[str, ...] = ()
 
 
 def group_diagrams(chord_names: list[str], tuning: str = "GCEA") -> list[Diagram]:
@@ -129,6 +132,7 @@ def make_book(
     given."""
     songs: list[tuple[Song, Path]] = []
     found: list[str] = list(warnings)
+    missing: list[str] = []
     skipped: dict[str, list[str]] = {}
     for path in paths:
         try:
@@ -139,11 +143,13 @@ def make_book(
         for name in song.skipped:
             skipped.setdefault(name, []).append(song.title)
         # Every tuning's table has the same chords, so any table will do.
-        found += [
+        undrawn = [
             f"{song.title}: no diagram for {name}"
             for name in song.chords
             if shape(name) is None
         ]
+        found += undrawn
+        missing += undrawn
     for name, titles in sorted(skipped.items()):
         where = titles[0] if len(titles) == 1 else f"{len(titles)} songs"
         found.append(f"skipped unknown directive {{{name}}} in {where}")
@@ -157,6 +163,7 @@ def make_book(
             for i, (song, _) in enumerate(songs)
         ),
         warnings=tuple(found),
+        missing_diagrams=tuple(missing),
         subtitle=subtitle,
         notes=notes,
         sources=sources,

@@ -39,9 +39,12 @@ Options, which override a StrumBook file's own settings:
   folder's name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
 - `--type song-library|set-list`: the type of book (default song-library, A to Z). A
-  set list needs a StrumBook file, and leaves out the index, link strip, reference
-  page and Credits unless you turn them on.
+  set list needs a StrumBook file, and leaves out the chord diagrams, index, link
+  strip, Reference pages and Credits unless you turn them on.
 - `--title-page on|off`: include the title page (default on).
+- `--chords on|off`: the chord diagrams down the side of each song (default on; off
+  for a set list). With `off`, the lyrics use the whole page width and the chord
+  names in them stay.
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's
@@ -53,7 +56,8 @@ Options, which override a StrumBook file's own settings:
   the word instead, so search finds the whole word.
 - `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the Reference page,
   for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
-  `baritone`), in any case. The chord names stay the same; the title page says which.
+  `baritone`), in any case. The chord names stay the same. The title page says which
+  tuning, when the book has diagrams or Reference pages.
 - `--slash-chords simplify|as-written`: `simplify` drops a slash chord's bass note
   when it's already in the chord, so `Am/C` prints as `Am`, but `C/B` stays. The
   default is `simplify` for GCEA, which has no real bass string, and `as-written` for
@@ -63,8 +67,8 @@ Options, which override a StrumBook file's own settings:
 
 To avoid page turns, a song drops its diagram column if the diagrams would push it onto
 a second page, or if it has more than 8 diagrams and needs more than one page anyway.
-The chord names in the lyrics always stay. StrumBook warns about chords it has no
-diagram for and ChordPro directives it doesn't know. Chords are played as written:
+The chord names in the lyrics always stay. StrumBook warns about ChordPro directives
+it doesn't know and, when the book has diagrams, about chords it has no diagram for. Chords are played as written:
 `{capo}` is ignored.
 
 To see a full book, `make christmas` builds all 28 carols from
