@@ -32,6 +32,10 @@ Sam saying "implement issue #N" approves that issue's goal, scope and acceptance
 criteria. Nothing else does: an issue existing, or an idea in a discussion, is not
 approval. Restate the task briefly and get on with it; don't ask for approval again.
 
+Each release has a GitHub milestone with its issues in priority order. When Sam asks 
+what's next, suggest the top open issue in the current milestone; his "implement 
+issue #N" still approves it.
+
 Stop and ask only for: a change of scope, a big design choice the issue doesn't cover,
 a new dependency, credentials, publishing, or anything destructive. If a design adds
 real complexity, name the simpler alternative and let Sam choose.
