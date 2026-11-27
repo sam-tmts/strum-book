@@ -3,6 +3,7 @@
 See docs/strumbook-files.md for the format.
 """
 
+import json
 import re
 import tomllib
 from dataclasses import dataclass
@@ -43,6 +44,29 @@ _SONGS_KEYS = {"include", "pick", "exclude", "set", "spares"}
 _SET_KEYS = {"name", "songs", "running-time", "notes"}
 SPARES = "Spares and encores"
 _NAME = re.compile(r"[a-z0-9-]+")
+_DOCS = "https://github.com/sam-tmts/strumbook/blob/main/docs/strumbook-files.md"
+# Where tomllib says it stopped: the end of its message on Python 3.12, which has no
+# lineno attribute.
+_AT = re.compile(r"\s*\(at line (\d+), column (\d+)\)$")
+# Likely slips on the line tomllib stopped at, each matching a key and a value, and
+# the advice for it.
+_SLIPS = (
+    (  # {title: Carols}
+        re.compile(r"\{\s*([\w-]+)\s*:\s*(.*?)\s*\}"),
+        (
+            "{found!r} is how a ChordPro song writes it; in a StrumBook file, write "
+            "{form}{under}"
+        ),
+    ),
+    (  # title: Carols
+        re.compile(r"([\w-]+)\s*:\s*(.*)"),
+        "{found!r} needs an equals sign and quotes: {form}",
+    ),
+    (  # title = Carols
+        re.compile(r"([\w-]+)\s*=\s*([^\s\"'\[{].*)"),
+        "{found!r} needs quotes around the text: {form}",
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -56,13 +80,14 @@ class BookFile:
 def read_book_file(path: Path, kind: str | None = None) -> BookFile:
     """Read a StrumBook file; `kind`, a type from the command line, overrides its own."""
     try:
-        data = tomllib.loads(path.read_text(encoding="utf-8-sig"))
+        text = path.read_text(encoding="utf-8-sig")
+        data = tomllib.loads(text)
     except UnicodeDecodeError:
         raise BuildError(f"{path.name} isn't UTF-8 text") from None
     except OSError as e:
         raise BuildError(f"can't read {path}: {e.strerror}") from None
     except tomllib.TOMLDecodeError as e:
-        raise BuildError(f"{path.name} isn't valid TOML: {e}") from None
+        raise BuildError(_toml_error(path.name, text, e)) from None
 
     warnings = _unknown(data, {"book", "sources", "songs", "build"}, "")
     book = _table(data, "book")
@@ -260,6 +285,31 @@ def _song(ref: object, folders: dict[str, Path], key: str) -> tuple[Path | None,
     near = [s for s in songs if s.casefold() == stem.casefold()]
     hint = f" (did you mean {near[0]!r}?)" if near else ""
     return None, f"[songs] {key}: no song {stem!r} in source {name!r}{hint}"
+
+
+def _toml_error(name: str, text: str, error: tomllib.TOMLDecodeError) -> str:
+    """What went wrong in a StrumBook file that isn't valid TOML, where, and how to
+    write it, with help for the likeliest slips from ChordPro."""
+    at = _AT.search(str(error))
+    if at is None:  # not expected, but never hide what tomllib said
+        return f"{name} isn't valid TOML: {error}"
+    number, column = int(at[1]), int(at[2])
+    lines = text.split("\n")  # as tomllib counts them
+    found = lines[number - 1].strip() if number <= len(lines) else ""
+    for slip, advice in _SLIPS:
+        if match := slip.fullmatch(found):
+            key, value = match.groups()
+            form = f"{key} = {json.dumps(value.strip(), ensure_ascii=False)}"
+            under = " under [book]" if key in _BOOK_KEYS else ""
+            return f"{name}, line {number}: " + advice.format(
+                found=found, form=form, under=under
+            )
+    problem = str(error)[: at.start()]
+    return (
+        f"{name}, line {number}, column {column}: this isn't valid TOML "
+        f"({problem[:1].lower() + problem[1:]}); see how to write a StrumBook file "
+        f"at {_DOCS}"
+    )
 
 
 def _table(data: dict, key: str) -> dict:

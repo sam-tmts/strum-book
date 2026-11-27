@@ -223,7 +223,9 @@ names must match exactly, capitals included), a song is in a set list twice, a s
 no name or no songs, a source is unknown, has no songs or can't be downloaded, a
 setting has a value StrumBook doesn't accept, or a `[songs]` key belongs to the other
 type (`include` or `exclude` in a set list; sets or `spares` in a song library; sets
-and `pick` together). `--type set-list` needs a StrumBook file. Keys it doesn't know
+and `pick` together). If the file isn't valid TOML, the error gives the line and,
+for the usual slips (a ChordPro line such as `{title: Carols}`, `title: Carols`, or
+`title = Carols` without quotes), shows how to write it: `title = "Carols"`. `--type set-list` needs a StrumBook file. Keys it doesn't know
 only get a warning, so a StrumBook file written for a newer StrumBook still builds.
 Unknown chords and directives in a song are warnings, as when building from a folder.
 
