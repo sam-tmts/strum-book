@@ -63,9 +63,16 @@ To see a full book, `make christmas` builds all 28 carols from
 `output/christmas-carols.pdf`, from the StrumBook file
 `books/christmas.strumbook.toml`.
 
-[Git](https://git-scm.com) is optional: StrumBook needs it, and the network, only to
-download a StrumBook file's `git` sources. It installs on macOS, Linux and Windows
-(x64), but not yet on Windows on ARM: its Typst renderer has no package for it.
+StrumBook installs on macOS, Linux and Windows (x64), but not yet on Windows on ARM:
+its Typst renderer has no package for it.
+
+### Programs StrumBook runs
+
+Besides its own Python packages, StrumBook runs these programs, and only when needed:
+
+| Program | When it's needed |
+|---------|------------------|
+| [Git](https://git-scm.com) (optional) | Only to download a StrumBook file's `git` sources, which also need the network. Folder builds and `path` sources don't need it. |
 
 ## How work happens
 
