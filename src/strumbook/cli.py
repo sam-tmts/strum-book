@@ -57,6 +57,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "the Reference pages: chord shapes and notes",
             "on; set-list off",
         ),
+        ("reference-notes", "the notes in each chord, in Reference", "on"),
         ("credits", "Credits", "on; set-list off"),
         ("set-breaks", "a page before each set", "set-list: on for 2+ sets or spares"),
     ]:

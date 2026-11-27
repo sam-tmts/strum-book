@@ -483,6 +483,9 @@
     if set-break != none { break-page(set-break) }
     song-page(song, song.show_diagrams, "")
   }
-  if data.reference_page { chart-page(); notes-page() }
+  if data.reference_page {
+    chart-page()
+    if data.notes_page { notes-page() }
+  }
   if data.credits { credits-section() }
 }

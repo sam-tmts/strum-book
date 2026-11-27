@@ -47,6 +47,8 @@ Options, which override a StrumBook file's own settings:
   names in them stay.
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).
+- `--reference-notes on|off`: include the "Notes in each chord" page in Reference
+  (default on). With `off`, Reference keeps just the chord shapes.
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's
   more than one set, or spares).
 - `--credits on|off`: include Credits (default on): each song's credits, linked both
