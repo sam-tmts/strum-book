@@ -297,7 +297,13 @@
   #heading(level: 1)[Title]
   #kicker[SONGBOOK] \
   #text(40pt, weight: "bold", data.title) \
+  #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
   #text(14pt, fill: muted, data.edition)
+  #if data.notes.len() > 0 {
+    v(10mm)
+    set par(spacing: 1em)
+    for lines in data.notes { par(text(12pt, lines.join(linebreak()))) }
+  }
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]
 
@@ -334,7 +340,10 @@
     ("Atkinson Hyperlegible", "set the words, in the Braille Institute's typeface made to be easy to read",
       "https://www.brailleinstitute.org/freefont/"),
   )
-  if data.source != none { made.push(("Songs", "came from this collection", data.source)) }
+  // Every source, by name; only a public link is shown, never a git address.
+  for s in data.sources {
+    made.push((s.name, "songs from this collection", if s.link != "" { s.link }))
+  }
   let address(url) = url.trim("https://", at: start).trim("http://", at: start).trim("/", at: end)
   section-page[
     #if credited.len() == 0 { opening }
@@ -347,10 +356,14 @@
       columns: (auto, 1fr),
       inset: (left: 0mm, right: 5mm, y: 2.6mm),
       stroke: (bottom: 0.5pt + rule, x: none, top: none),
-      ..made.map(((name, what, url)) => (
-        link(url, text(11pt, weight: "bold", name)),
-        [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))],
-      )).flatten()
+      ..made.map(((name, what, url)) => {
+        let name = text(11pt, weight: "bold", name)
+        if url == none {
+          (name, [#text(10pt, what) \ #text(9pt, fill: muted)[No public link]])
+        } else {
+          (link(url, name), [#text(10pt, what) \ #link(url, text(9pt, fill: muted, address(url)))])
+        }
+      }).flatten()
     )
   ]
 }

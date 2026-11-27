@@ -3,17 +3,15 @@
 import argparse
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import date
 from importlib.metadata import version
 from pathlib import Path
 
 from strumbook.book import BuildError, read_book
+from strumbook.bookfile import CHOICES, TYPES, BookFile, read_book_file
 
-
-def _url(value: str) -> str:
-    if not value.startswith(("https://", "http://")):
-        raise argparse.ArgumentTypeError(f"not a web address: {value!r}")
-    return value
+_ON_OFF = {"on": True, "off": False}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -27,48 +25,41 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", title="commands")
     build = commands.add_parser(
         "build",
-        help="build a tablet songbook PDF from a folder of ChordPro songs",
-        description="Build a tablet songbook PDF from the .cho files in a folder.",
+        help="build a tablet songbook PDF from a StrumBook file or a folder of songs",
+        description="Build a tablet songbook PDF from a StrumBook file "
+        "(.strumbook.toml), or "
+        "from every .cho file in a folder. Options given here override the StrumBook "
+        "file's [build] settings.",
     )
-    build.add_argument("songs_dir", type=Path, metavar="SONGS_DIR")
+    build.add_argument("book", type=Path, metavar="BOOK.strumbook.toml|SONGS_DIR")
     build.add_argument("-o", "--output", type=Path, required=True, metavar="BOOK.pdf")
-    build.add_argument("--title", help="the book's title (default: the folder's name)")
-    today = date.today()
-    built = f"{today.day} {today:%B %Y}"
     build.add_argument(
-        "--edition",
-        default=built,
-        help="the edition line on the title page (default: today's date)",
+        "--title",
+        help="the book's title (default: the StrumBook file's title, or the folder's name)",
     )
     build.add_argument(
-        "--source",
-        type=_url,
-        metavar="URL",
-        help="where the songs come from, linked in Credits",
+        "--edition", help="the edition line on the title page (default: today's date)"
     )
     build.add_argument(
-        "--title-page",
-        choices=["on", "off"],
-        default="on",
-        help="include the title page (default on)",
+        "--type",
+        choices=list(TYPES),
+        help="the type of book (default: song-library, A to Z)",
     )
     build.add_argument(
-        "--credits",
-        choices=["on", "off"],
-        default="on",
-        help="include Credits (default on)",
+        "--title-page", choices=_ON_OFF, help="include the title page (default on)"
+    )
+    build.add_argument(
+        "--credits", choices=_ON_OFF, help="include Credits (default on)"
     )
     build.add_argument(
         "--mid-word-chords",
-        choices=["inline", "above"],
-        default="inline",
+        choices=CHOICES["mid-word-chords"],
         help="draw a chord inside a word inline (default), or above the word so "
         "search finds the whole word",
     )
     build.add_argument(
         "--pdf-tags",
-        choices=["on", "off"],
-        default="on",
+        choices=_ON_OFF,
         help="tag the PDF for screen readers (default on); off makes it smaller",
     )
     args = parser.parse_args(argv)
@@ -79,20 +70,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Imported here so that --help works without the renderer.
     from strumbook.render import render
 
+    today = date.today()
+    built = f"{today.day} {today:%B %Y}"
     try:
-        book = read_book(args.songs_dir, args.title)
+        if args.book.is_file() or args.book.suffix == ".toml":
+            recipe = read_book_file(args.book)
+        else:  # the shortcut: every song in one folder
+            recipe = BookFile(read_book(args.book), "song-library", None, {})
+        book = recipe.book
+        if args.title is not None:
+            book = replace(book, title=args.title)
+        # Settings layers: the type's defaults, the StrumBook file's [build], then
+        # options given here.
+        given = {
+            key: _ON_OFF.get(value, value)
+            for key in TYPES["song-library"]
+            if (value := getattr(args, key.replace("-", "_"))) is not None
+        }
+        settings = {**TYPES[args.type or recipe.type], **recipe.build, **given}
         for warning in book.warnings:
             print(f"warning: {warning}", file=sys.stderr)
         render(
             book,
             args.output,
-            mid_word=args.mid_word_chords,
-            pdf_tags=args.pdf_tags == "on",
-            edition=args.edition,
+            mid_word=settings["mid-word-chords"],
+            pdf_tags=settings["pdf-tags"],
+            edition=args.edition or recipe.edition or built,
             built=built,
-            source=args.source,
-            title_page=args.title_page == "on",
-            credits=args.credits == "on",
+            title_page=settings["title-page"],
+            credits=settings["credits"],
         )
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)

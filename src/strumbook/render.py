@@ -10,7 +10,13 @@ from pathlib import Path
 
 import typst
 
-from strumbook.book import Book, BookSong, BuildError, diagram_columns, show_diagrams
+from strumbook.book import (
+    Book,
+    BookSong,
+    BuildError,
+    diagram_columns,
+    show_diagrams,
+)
 
 LAYOUT = Path(__file__).parent / "layout"
 _OPTIONS = {
@@ -30,12 +36,11 @@ def render(
     pdf_tags: bool,
     edition: str,
     built: str,
-    source: str | None,
     title_page: bool,
     credits: bool,
 ) -> None:
     """Write `book` as a PDF. `mid_word` is "inline" or "above". `built` is the
-    build date, for the About page; `source` is a URL for the songs, shown there."""
+    build date, for the About page."""
     songs = [_song_data(s) for s in book.songs]
     reference = [
         {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
@@ -45,10 +50,12 @@ def render(
     labels |= {d["label"] for g in reference for d in g["diagrams"]}
     data = {
         "title": book.title,
+        "subtitle": book.subtitle,
+        "notes": _paragraphs(book.notes),
         "count": f"{len(songs)} song{'s' if len(songs) != 1 else ''}",
         "edition": edition,
         "built": built,
-        "source": source,
+        "sources": [{"name": name, "link": link} for name, link in book.sources],
         "title_page": title_page,
         "credits": credits,
         "tuning": "GCEA",
@@ -113,6 +120,12 @@ def _song_data(book_song: BookSong) -> dict:
         "diagrams": [_diagram_data(d) for d in book_song.diagrams],
         "diagram_columns": diagram_columns(len(book_song.diagrams)),
     }
+
+
+def _paragraphs(text: str) -> list[list[str]]:
+    """Plain text as paragraphs of lines: blank lines separate paragraphs."""
+    paragraphs = re.split(r"\n\s*\n", text.strip())
+    return [[line.strip() for line in p.splitlines()] for p in paragraphs if p.strip()]
 
 
 def _letters(book: Book) -> list[dict]:
