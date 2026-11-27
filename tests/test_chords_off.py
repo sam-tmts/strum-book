@@ -366,3 +366,70 @@ def test_a_set_list_with_diagrams_on_warns_about_a_missing_diagram(
     assert code == 0, captured.err
     assert "Odd: no diagram for Zq9" in captured.err
     assert "1 warning\n" in captured.out
+
+
+# The title page names the tuning only when the book has chord shapes in it.
+
+STANDARD_LINE = "Chord shapes: Standard ukulele (GCEA)"
+BARITONE_LINE = "Chord shapes: Baritone ukulele (DGBE)"
+
+
+def _title_page(reader: PdfReader) -> str:
+    return " ".join(reader.pages[0].extract_text().split())
+
+
+@pytest.mark.parametrize(
+    ("kind", "build", "flags", "has_line"),
+    [
+        ("library", "", [], True),
+        ("library", "", ["--chords", "off"], True),  # the Reference is still on
+        ("library", "", ["--reference", "off"], True),  # the diagrams are still on
+        ("library", "", ["--chords", "off", "--reference", "off"], False),
+        ("library", "chords = false\nreference = false", [], False),
+        ("library", "chords = false\nreference = false", ["--chords", "on"], True),
+        ("set-list", "", [], False),
+        ("set-list", "chords = true", [], True),
+        ("set-list", "reference = true", [], True),
+        ("set-list", "", ["--chords", "on"], True),
+        ("set-list", "", ["--reference", "on"], True),
+        ("set-list", "chords = true", ["--chords", "off"], False),
+    ],
+)
+@pytest.mark.parametrize("tuning", ["GCEA", "DGBE"])
+def test_the_title_page_names_the_tuning_only_with_chords_or_reference_on(
+    kind: str,
+    build: str,
+    flags: list[str],
+    has_line: bool,
+    tuning: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    build = f'{build}\ntuning = "{tuning}"'
+    book = _library(tmp_path, build) if kind == "library" else _setlist(tmp_path, build)
+    reader = built(book, tmp_path / "b.pdf", *flags, capsys=capsys)
+    line, other = (STANDARD_LINE, BARITONE_LINE)
+    if tuning == "DGBE":
+        line, other = other, line
+    title = _title_page(reader)
+    assert (line in title) is has_line
+    assert other not in title
+    assert "Chord shapes" not in title or has_line
+
+
+def test_nothing_else_on_the_title_page_changes_when_the_tuning_line_goes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    on = built(_library(tmp_path), tmp_path / "on.pdf", capsys=capsys)
+    off = built(
+        _library(tmp_path),
+        tmp_path / "off.pdf",
+        "--chords",
+        "off",
+        "--reference",
+        "off",
+        capsys=capsys,
+    )
+    assert _title_page(off) == " ".join(
+        _title_page(on).replace(STANDARD_LINE, "").split()
+    )
