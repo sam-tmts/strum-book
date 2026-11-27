@@ -37,7 +37,7 @@ def write_book(
     title: str = "Test Book",
     name: str = "test.strumbook.toml",
 ) -> Path:
-    """Write a book file into <tmp_path>/books/ and return its path."""
+    """Write a StrumBook file into <tmp_path>/books/ and return its path."""
     folder = tmp_path / "books"
     folder.mkdir(exist_ok=True)
     text = f'[book]\ntitle = "{title}"\n{book}\n{sources}\n[songs]\n{songs}\n'

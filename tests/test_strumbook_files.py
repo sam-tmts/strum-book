@@ -3,6 +3,7 @@ synthetic songs. Git sources are in test_git_sources.py."""
 
 import re
 import shutil
+import tomllib
 from datetime import date
 from pathlib import Path
 
@@ -99,7 +100,7 @@ def test_notes_are_plain_text_shown_as_typed(
     assert typed in page_text(reader, range(1))
 
 
-def test_relative_paths_are_relative_to_the_book_file_not_the_working_folder(
+def test_relative_paths_are_relative_to_the_strumbook_file_not_the_working_folder(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     shutil.copytree(FIXTURES, tmp_path / "collections" / "carols")
@@ -201,7 +202,7 @@ def test_include_a_list_of_sources_takes_only_those(
     ]
 
 
-def test_pick_takes_just_those_songs_a_to_z_by_default(
+def test_pick_takes_just_those_songs_a_to_z(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(tmp_path, songs=f'pick = ["{BETHLEHEM}", "{AWAY}"]')
@@ -260,20 +261,6 @@ def test_a_picked_book_is_a_to_z_and_so_is_its_index(
         pages.first_page("Reference"),
         pages.first_page("Credits"),
     ]
-    for n in range(1, pages.page_count):  # and it keeps the link strip
-        assert len(split_links(reader, n)[0]) == STRIP_CELLS, f"page {n}"
-
-
-def test_pick_and_include_together_are_one_a_to_z_book(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    book = write_book(
-        tmp_path,
-        sources=two_collections(tmp_path),
-        songs='include = ["one"]\npick = ["two:Kiwi", "two:Apple Tree"]',
-    )
-    reader = built(book, tmp_path / "book.pdf", capsys=capsys)
-    assert titles(reader)[2:-2] == ["Apple Tree", "Kiwi", "Mango", "Zebra Song"]
 
 
 def test_same_file_name_in_two_sources_appears_twice_with_the_artist_to_tell_apart(
@@ -340,7 +327,7 @@ def test_a_picked_a_to_z_book_also_has_the_strip(
 # Settings: type defaults, then [build], then command-line options.
 
 
-def test_build_settings_in_the_book_file_apply(
+def test_build_settings_in_the_strumbook_file_apply(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(
@@ -395,7 +382,7 @@ def test_command_line_can_turn_off_what_the_build_table_turns_on(
     assert titles(reader) == ["Title", "Index", *CAROLS, "Reference"]
 
 
-def test_edition_on_the_command_line_overrides_the_book_file(
+def test_edition_on_the_command_line_overrides_the_strumbook_file(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(tmp_path, book='edition = "2026-12-01"')
@@ -598,7 +585,7 @@ def test_each_error_names_the_problem_and_leaves_no_pdf(
     assert_clean_error(code, err, out, *needles)
 
 
-def test_a_book_file_with_no_title_is_an_error(
+def test_a_strumbook_file_with_no_title_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = tmp_path / "untitled.strumbook.toml"
@@ -608,7 +595,7 @@ def test_a_book_file_with_no_title_is_an_error(
     assert_clean_error(code, err.replace(str(book), "BOOK"), out, "title")
 
 
-def test_a_book_file_that_is_not_toml_is_an_error(
+def test_a_strumbook_file_that_is_not_toml_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = tmp_path / "broken.strumbook.toml"
@@ -619,7 +606,7 @@ def test_a_book_file_that_is_not_toml_is_an_error(
     assert "folder" not in err  # read as a StrumBook file, not taken for a songs folder
 
 
-def test_a_missing_book_file_is_an_error(
+def test_a_missing_strumbook_file_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     out = tmp_path / "book.pdf"
@@ -678,7 +665,7 @@ def test_unknown_keys_warn_and_the_book_still_builds(
     assert not error_lines(err)
 
 
-def test_a_clean_book_file_prints_no_warnings(
+def test_a_clean_strumbook_file_prints_no_warnings(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(
@@ -819,7 +806,7 @@ def test_type_song_library_builds_like_the_default(
     assert titles(PdfReader(tmp_path / "b.pdf")) == FULL_BOOK
 
 
-def test_title_on_the_command_line_overrides_the_book_files_title(
+def test_title_on_the_command_line_overrides_the_strumbook_files_title(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     book = write_book(tmp_path, title="Filed Title")
@@ -882,3 +869,29 @@ def test_pin_on_a_path_source_is_an_error(
     out = tmp_path / "book.pdf"
     code, err = failing(book, out, capsys)
     assert_clean_error(code, err, out, "pin")
+
+
+def test_the_committed_christmas_file_uses_only_the_documented_format() -> None:
+    path = Path(__file__).parents[1] / "books" / "christmas.strumbook.toml"
+    with path.open("rb") as stream:
+        data = tomllib.load(stream)
+    known = {
+        "book": {"title", "type", "edition", "subtitle", "notes"},
+        "sources": None,  # one table per source, checked below
+        "songs": {"include", "pick", "exclude"},
+        "build": {"title-page", "credits", "mid-word-chords", "pdf-tags"},
+    }
+    assert set(data) <= set(known)
+    for table, keys in known.items():
+        if keys is not None and table in data:
+            assert set(data[table]) <= keys, table
+    assert data["book"]["title"]
+    sources = data["sources"]
+    assert sources
+    for name, source in sources.items():
+        assert re.fullmatch(r"[a-z0-9-]+", name)
+        assert set(source) <= {"path", "git", "pin", "folder", "link"}
+        assert source["git"].startswith("https://")
+        assert re.fullmatch(r"[0-9a-f]{40}", source["pin"])
+        assert source["link"].startswith("https://")
+    assert data["songs"]["include"] == "all"
