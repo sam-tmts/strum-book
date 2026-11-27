@@ -66,9 +66,9 @@ flowchart LR
   data, never as Typst markup, in three offline passes: outline the chord names to
   SVG (`layout/chord-names.typ`) so they stay out of the searchable text, measure
   each song with and without diagrams and apply the rules, then compile the book:
-  title page, index, songs, Reference (the chord chart and the notes in each chord)
-  and Credits, or for a set list a running-order page and a break page before each
-  set. Each part can be turned off. The index is always A to Z. `render.py` works out
+  title page, index, songs, Reference (a chord chart per listed tuning, then the
+  notes in each chord) and Credits, or for a set list a running-order page and a
+  break page before each set. Each part can be turned off. The index is always A to Z. `render.py` works out
   the link strip's cells: letters for a song library, set names for a set list, or
   none. The notes in each chord are the one place chord names are real text, so a
   search for one such as "Am7" finds that page; in songs they never are.

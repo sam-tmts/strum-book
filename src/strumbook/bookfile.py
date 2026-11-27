@@ -10,12 +10,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from strumbook.book import Book, BuildError, Section, make_book, song_files
-from strumbook.chords import TUNINGS, tuning
+from strumbook.chords import TUNINGS, tuning, tunings
 from strumbook.sources import SIGN_IN, fetch
 
 # Each type's defaults for the [build] settings; the first layer of three.
 # set-breaks None means: on when a set list has more than one set, or spares.
 # slash-chords None means: simplify for GCEA, as written for DGBE.
+# reference-charts None means: one chart, in the book's tuning.
 TYPES = {
     "song-library": {
         "title-page": True,
@@ -24,6 +25,7 @@ TYPES = {
         "navigation": True,
         "reference": True,
         "reference-notes": True,
+        "reference-charts": None,
         "credits": True,
         "set-breaks": False,
         "mid-word-chords": "inline",
@@ -38,6 +40,7 @@ TYPES = {
         "navigation": False,
         "reference": False,
         "reference-notes": True,
+        "reference-charts": None,
         "credits": False,
         "set-breaks": None,
         "mid-word-chords": "inline",
@@ -107,7 +110,17 @@ def read_book_file(path: Path, kind: str | None = None) -> BookFile:
     build = {k: v for k, v in build.items() if k in TYPES["song-library"]}
     if isinstance(build.get("tuning"), str):  # any case, and its synonyms
         build["tuning"] = tuning(build["tuning"]) or build["tuning"]
+    if "reference-charts" in build:  # a list of tunings, in order
+        charts = tunings(build["reference-charts"])
+        if charts is None:
+            raise BuildError(
+                f"[build] reference-charts must be a list of {_either(TUNINGS)}, "
+                'such as ["GCEA", "DGBE"]'
+            )
+        build["reference-charts"] = charts
     for key, value in build.items():
+        if key == "reference-charts":
+            continue
         expected = CHOICES.get(key)
         if expected is None and not isinstance(value, bool):
             raise BuildError(f"[build] {key} must be true or false")

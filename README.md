@@ -49,6 +49,9 @@ Options, which override a StrumBook file's own settings:
   include each (default on).
 - `--reference-notes on|off`: include the "Notes in each chord" page in Reference
   (default on). With `off`, Reference keeps just the chord shapes.
+- `--reference-charts GCEA,DGBE`: a chord shapes page in Reference for each tuning
+  listed, in order, so one book can serve standard and baritone players (default: the
+  book's own tuning). Song diagrams still follow `--tuning`.
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's
   more than one set, or spares).
 - `--credits on|off`: include Credits (default on): each song's credits, linked both

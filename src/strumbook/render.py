@@ -80,14 +80,12 @@ def render(
             for s in sorted(book.songs, key=lambda s: sort_key(s.song))
         ],
         "strip": _strip(book, settings, sections) if settings["navigation"] else [],
-        # The chart's cells are diagrams only: its row and column name the chord.
-        "chart": {
-            "headings": [{"": "major", "aug": "+"}.get(t, t) for t in CHART_TYPES],
-            "rows": [
-                {"root": root.replace("b", "♭").replace("#", "♯"), "shapes": shapes}
-                for root, shapes in chord_chart(tuning)
-            ],
-        },
+        # The charts' cells are diagrams only: a row and a column name each chord.
+        "chart_headings": [{"": "major", "aug": "+"}.get(t, t) for t in CHART_TYPES],
+        "charts": [
+            _chart(t, "reference" if i == 0 else f"chart-{t}")
+            for i, t in enumerate(settings["reference-charts"])
+        ],
         "chord_notes": chord_notes(),
     }
     try:
@@ -153,6 +151,19 @@ def _song_data(book_song: BookSong, tuning: str, printed) -> dict:
         "blocks": blocks,
         "diagrams": [_diagram_data(d) for d in diagrams],
         "diagram_columns": diagram_columns(len(diagrams)),
+    }
+
+
+def _chart(tuning: str, label: str) -> dict:
+    """A chord shapes page in `tuning`; `label` is the target its links go to."""
+    return {
+        "letters": tuning,
+        "name": TUNING_NAMES[tuning],
+        "label": label,
+        "rows": [
+            {"root": root.replace("b", "♭").replace("#", "♯"), "shapes": shapes}
+            for root, shapes in chord_chart(tuning)
+        ],
     }
 
 
