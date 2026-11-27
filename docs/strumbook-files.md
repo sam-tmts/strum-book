@@ -227,6 +227,11 @@ and `pick` together). `--type set-list` needs a StrumBook file. Keys it doesn't 
 only get a warning, so a StrumBook file written for a newer StrumBook still builds.
 Unknown chords and directives in a song are warnings, as when building from a folder.
 
+If the file isn't valid TOML, the error says which line. For the usual slips, it shows
+how to write the line: a ChordPro line such as `{title: Carols}`, `title: Carols` or
+`title = Carols` all become `title = "Carols"`, and `credits = off` becomes
+`credits = false`.
+
 ## Downloaded collections
 
 StrumBook keeps the collections it downloads in your computer's cache folder:

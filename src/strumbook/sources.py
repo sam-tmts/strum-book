@@ -18,12 +18,12 @@ from strumbook.book import BuildError
 _GIT_URL = re.compile(
     r"(?:https|ssh)://(?:\w[\w.-]*@)?\w[^\s@]*|\w[\w.-]*@\w[\w.-]*:\S+"
 )
-_SIGN_IN = re.compile(r"https://[^/]*@")
+SIGN_IN = re.compile(r"https://[^/]*@")
 _PIN = re.compile(r"[\w.][\w./-]*")
 
 
 def check_git_url(url: str) -> None:
-    if _SIGN_IN.match(url):  # don't print it: it may hold a password or token
+    if SIGN_IN.match(url):  # don't print it: it may hold a password or token
         raise BuildError(
             "a git address can't hold sign-in details: leave them to git's own sign-in"
         )
