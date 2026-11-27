@@ -101,6 +101,7 @@ StrumBook builds on the great work of these projects:
 | [Typst](https://typst.app) | Lays out every page of the book and writes the PDF: searchable text, links and bookmarks. |
 | [typst-py](https://github.com/messense/typst-py) | Bundles the Typst compiler as a Python package, so installing StrumBook needs nothing else. |
 | [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) | The Braille Institute's typeface, designed to be easy to tell letters apart. It keeps lyrics clear on a tablet at arm's length. |
+| [Libertinus Serif](https://github.com/alerque/libertinus) | Bundled with Typst, it sets the sharp and flat signs (♯ ♭) on the Reference pages, which Atkinson Hyperlegible doesn't have. |
 | [ChordPro](https://www.chordpro.org) | The song format: lyrics with chords inline, which StrumBook reads. |
 | [Git](https://git-scm.com) | Downloads the song collections a StrumBook file names, if they're in git, with the book maker's own sign-in. |
 | [Christmas Songs](https://github.com/pathawks/Christmas-Songs) | Public-domain carols in ChordPro, used as test songs. |

@@ -11,6 +11,7 @@ from pathlib import Path
 import typst
 
 from strumbook.book import (
+    CHART_TYPES,
     Book,
     BookSong,
     BuildError,
@@ -30,8 +31,6 @@ _OPTIONS = {
 }
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
-# The chord shapes page's column headings, for book.CHART_TYPES.
-_CHART_HEADINGS = ("major", "m", "7", "maj7", "m7", "sus2", "sus4", "+", "dim7")
 
 
 def render(
@@ -81,7 +80,7 @@ def render(
         "strip": _strip(book, settings, sections) if settings["navigation"] else [],
         # The chart's cells are diagrams only: its row and column name the chord.
         "chart": {
-            "headings": _CHART_HEADINGS,
+            "headings": [{"": "major", "aug": "+"}.get(t, t) for t in CHART_TYPES],
             "rows": [
                 {"root": root.replace("b", "♭").replace("#", "♯"), "shapes": shapes}
                 for root, shapes in chord_chart(tuning)

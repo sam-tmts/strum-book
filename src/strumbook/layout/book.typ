@@ -1,6 +1,7 @@
 // StrumBook's FTR layout. A song library: title page, index, songs with chord diagrams,
-// reference page, credits. A set list: title page, running order, then each set's
-// break page and songs; the index, reference page and credits are optional.
+// Reference (chord shapes, notes in each chord), credits. A set list: title page,
+// running order, then each set's break page and songs; the index, Reference and
+// credits are optional.
 // All content arrives as JSON in sys.inputs.data, from strumbook/render.py.
 // In "measure" mode it lays out the index and each song with and without diagrams,
 // and reports their page spans as <pages> metadata for render.py to read back.
@@ -23,7 +24,11 @@
 #set document(title: data.title)
 #set page(paper: "a4")
 #let float-mid = data.mid_word == "above"
-#set text(font: "Atkinson Hyperlegible", size: body-size, fill: ink, lang: "en")
+// Atkinson Hyperlegible has no sharp or flat signs (♯ ♭), so they come from Libertinus
+// Serif, which Typst bundles.
+#set text(
+  font: ("Atkinson Hyperlegible", "Libertinus Serif"), size: body-size, fill: ink, lang: "en",
+)
 #set par(leading: 0.65em, spacing: if float-mid { 1.15em } else { 0.65em })
 // Headings exist for bookmarks and link targets; titles are drawn by hand.
 #show heading: none
@@ -372,8 +377,10 @@
     inset: (x: 0.8mm, y: 2.2mm),
     stroke: (bottom: 0.5pt + rule, x: none, top: none),
     align: left + top,
-    [], ..notes.types.map(t => text(8.5pt, weight: "bold", t.name)),
-    [], ..notes.types.map(t => text(8.5pt, fill: muted, t.formula)),
+    table.header(
+      [], ..notes.types.map(t => text(8.5pt, weight: "bold", t.name)),
+      [], ..notes.types.map(t => text(8.5pt, fill: muted, t.formula)),
+    ),
     ..notes.rows.map(row => (
       text(9pt, weight: "bold", fill: muted, row.root),
       ..row.cells.map(c => [#text(8.5pt, weight: "bold", c.chord) \ #text(8.5pt, c.notes)]),
