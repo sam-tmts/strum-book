@@ -1,6 +1,6 @@
 # The full Christmas book for `make christmas`: all 28 carols from
 # pathawks/Christmas-Songs, pinned so the book never changes under us.
-# See docs/book-files.md for the format.
+# See docs/strumbook-files.md for the format.
 
 [book]
 title = "Christmas Carols"
@@ -12,6 +12,7 @@ Bring mince pies. Carols marked with a capo are played as written.
 [sources.carols]
 git = "https://github.com/pathawks/Christmas-Songs"
 pin = "263d5ce46d6569b6163b4a516874a203972b2b5b"
+link = "https://github.com/pathawks/Christmas-Songs"
 
 [songs]
 include = "all"

@@ -14,7 +14,7 @@ format:
 build:
 	uv build --no-sources
 
-# The whole of pathawks/Christmas-Songs, pinned, as a full book. The book file clones
+# The whole of pathawks/Christmas-Songs, pinned, as a full book. The StrumBook file clones
 # it into the user cache: StrumBook only reads it and nothing is committed.
 christmas:
-	uv run --locked strumbook build books/christmas.book.toml -o output/christmas-carols.pdf
+	uv run --locked strumbook build books/christmas.strumbook.toml -o output/christmas-carols.pdf

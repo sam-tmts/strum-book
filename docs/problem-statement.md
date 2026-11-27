@@ -34,7 +34,7 @@ extras.
    text, and a person checks each song. Imports arrive as pull requests, so the check
    is the review.
 3. **Books are built from one or more collections**, either every song or a set list in
-   running order. People make three kinds of book:
+   running order. For example:
    - **a group's songbook:** hundreds of songs, everything in one or more collections,
      A to Z;
    - **a band's extended songbook:** tens to a couple of hundred songs picked from
@@ -42,7 +42,8 @@ extras.
    - **a gig set list:** 10 to 20 songs from several collections, in a fixed running
      order, possibly in separate sets, with much less clutter.
 
-   A [book file](book-files.md) describes each one.
+   A [StrumBook file](strumbook-files.md) describes each one; its type
+   (`song-library` or `set-list`) says how the book is put together.
 4. **First goal: two books from the same songs**, one for standard ukulele and one for
    baritone, differing only in their chord diagrams.
 5. **Every book has** clean searchable text, a tappable contents page with an A-to-Z
@@ -101,11 +102,12 @@ is too tricky for the group's beginners, and perhaps some songs of its own. A ba
 might keep two collections, covers and originals, and build its book from those plus
 the group's collection.
 
-- **A [book file](book-files.md) names its collections and its songs.** It can live
-  anywhere, often in the `books/` folder of whichever repository owns the book.
+- **A [StrumBook file](strumbook-files.md) names its collections and its songs.** It
+  can live anywhere, often in the `books/` folder of whichever repository owns the
+  book.
 - **Songs are referred to by collection and file name**, such as
-  `group:the-holly-and-the-ivy--traditional`, where `group` is the book file's name for
-  that collection, so the same file name in two collections never clashes.
+  `group:the-holly-and-the-ivy--traditional`, where `group` is the StrumBook file's name
+  for that collection, so the same file name in two collections never clashes.
 - **The same song in two collections**, such as a band's arrangement of a group song, is
   two separate files. The book picks one; the band's version can record where it came
   from with `{meta: ...}`.
@@ -115,7 +117,7 @@ the group's collection.
 - **Rights matter more.** A band's originals are its own and could appear in a book
   posted publicly.
 
-Book files (issue #12) cover all of this.
+StrumBook files (issue #12) cover all of this.
 
 ## What we learnt from ChordPro
 
