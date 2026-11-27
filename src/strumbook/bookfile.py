@@ -10,10 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from strumbook.book import Book, BuildError, Section, make_book, song_files
+from strumbook.chords import TUNINGS, tuning
 from strumbook.sources import SIGN_IN, fetch
 
 # Each type's defaults for the [build] settings; the first layer of three.
 # set-breaks None means: on when a set list has more than one set, or spares.
+# slash-chords None means: simplify for GCEA, as written for DGBE.
 TYPES = {
     "song-library": {
         "title-page": True,
@@ -24,6 +26,8 @@ TYPES = {
         "set-breaks": False,
         "mid-word-chords": "inline",
         "pdf-tags": True,
+        "tuning": "GCEA",
+        "slash-chords": None,
     },
     "set-list": {
         "title-page": True,
@@ -34,9 +38,15 @@ TYPES = {
         "set-breaks": None,
         "mid-word-chords": "inline",
         "pdf-tags": True,
+        "tuning": "GCEA",
+        "slash-chords": None,
     },
 }
-CHOICES = {"mid-word-chords": ("inline", "above")}
+CHOICES = {
+    "mid-word-chords": ("inline", "above"),
+    "slash-chords": ("simplify", "as-written"),
+    "tuning": tuple(TUNINGS),
+}
 
 _BOOK_KEYS = {"title", "type", "edition", "subtitle", "notes"}
 _SOURCE_KEYS = {"path", "git", "pin", "folder", "link"}
@@ -91,6 +101,8 @@ def read_book_file(path: Path, kind: str | None = None) -> BookFile:
     build = _table(data, "build")
     warnings += _unknown(build, set(TYPES["song-library"]), "[build]")
     build = {k: v for k, v in build.items() if k in TYPES["song-library"]}
+    if isinstance(build.get("tuning"), str):  # any case, and its synonyms
+        build["tuning"] = tuning(build["tuning"]) or build["tuning"]
     for key, value in build.items():
         expected = CHOICES.get(key)
         if expected is None and not isinstance(value, bool):

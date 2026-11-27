@@ -175,6 +175,8 @@ on.
 | `credits` | Credits and "About this book" | on | off |
 | `set-breaks` | A page before each set | — | on when there's more than one set, or spares |
 | `mid-word-chords` | `"inline"` or `"above"`: see the [README](../README.md) | `"inline"` | `"inline"` |
+| `tuning` | `"GCEA"` (or `"ukulele"`) or `"DGBE"` (or `"baritone"`), in any case: see the [README](../README.md) | `"GCEA"` | `"GCEA"` |
+| `slash-chords` | `"simplify"` or `"as-written"`: see the [README](../README.md) | `"simplify"` for GCEA, `"as-written"` for DGBE | the same |
 | `pdf-tags` | Tag the PDF for screen readers | on | on |
 
 ## Set lists

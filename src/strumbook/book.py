@@ -1,6 +1,7 @@
-"""The book model: songs in order with their chord diagrams, and the reference chords.
+"""The book model: songs in order, and the rules for their chord diagrams.
 
-It knows nothing about pages; the renderer measures songs and asks `show_diagrams`.
+It knows nothing about pages; the renderer groups each song's chords into diagrams in
+the book's tuning, measures songs and asks `show_diagrams`.
 """
 
 import unicodedata
@@ -35,7 +36,6 @@ class BookSong:
     song: Song
     id: str
     letter: str  # index group: A–Z, or "#" for sort titles that don't start with one
-    diagrams: tuple[Diagram, ...]
 
 
 @dataclass(frozen=True)
@@ -53,7 +53,6 @@ class Section:
 class Book:
     title: str
     songs: tuple[BookSong, ...]  # in book order
-    reference: tuple[tuple[str, tuple[Diagram, ...]], ...]  # root, its diagrams
     warnings: tuple[str, ...]
     subtitle: str = ""
     notes: str = ""  # plain text; paragraphs separated by blank lines
@@ -61,14 +60,23 @@ class Book:
     sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
 
 
-def group_diagrams(chord_names: list[str]) -> list[Diagram]:
-    """One diagram per fingering, in order of first use; unknown chords left out."""
+def group_diagrams(chord_names: list[str], tuning: str = "GCEA") -> list[Diagram]:
+    """One diagram per fingering in `tuning`, in order of first use; unknown chords
+    left out."""
     by_frets: dict[tuple[int, ...], list[str]] = {}
     for name in chord_names:
-        frets = shape(name)
+        frets = shape(name, tuning)
         if frets is not None and name not in by_frets.setdefault(frets, []):
             by_frets[frets].append(name)
     return [Diagram(tuple(names), frets) for frets, names in by_frets.items()]
+
+
+def reference_diagrams(tuning: str) -> list[tuple[str, list[Diagram]]]:
+    """The chord shapes page: each root with its major, minor and 7th diagrams."""
+    return [
+        (root, group_diagrams([root, root + "m", root + "7"], tuning))
+        for root in REFERENCE_ROOTS
+    ]
 
 
 def show_diagrams(diagrams: int, pages_with: int, pages_without: int) -> bool:
@@ -128,6 +136,7 @@ def make_book(
         songs.append((song, path))
         for name in song.skipped:
             skipped.setdefault(name, []).append(song.title)
+        # Every tuning's table has the same chords, so any table will do.
         found += [
             f"{song.title}: no diagram for {name}"
             for name in song.chords
@@ -142,17 +151,8 @@ def make_book(
     return Book(
         title=title,
         songs=tuple(
-            BookSong(
-                song,
-                f"s{i}",
-                index_letter(song.sort_title),
-                tuple(group_diagrams(song.chords)),
-            )
+            BookSong(song, f"s{i}", index_letter(song.sort_title))
             for i, (song, _) in enumerate(songs)
-        ),
-        reference=tuple(
-            (root, tuple(group_diagrams([root, root + "m", root + "7"])))
-            for root in REFERENCE_ROOTS
         ),
         warnings=tuple(found),
         subtitle=subtitle,

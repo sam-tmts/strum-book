@@ -58,8 +58,10 @@ Tests never touch the network or the real cache: the `isolated_home` fixture poi
 cache at a temporary folder, and a local bare repository stands in for GitHub, through
 git's `insteadOf` setting in the environment.
 
-The layout lives in `src/strumbook/layout/book.typ`; the chord shapes in
-`src/strumbook/chords.json` (frets per string, G C E A).
+The layout lives in `src/strumbook/layout/book.typ`; the chord shapes in one table per
+tuning, `src/strumbook/chords-<tuning>.json` (frets per string, in the tuning's order:
+G C E A, or D G B E). A new tuning needs a table with the same chords, and a line in
+each of `TUNINGS`, `TUNING_NAMES` and `SLASH_DEFAULTS` in `chords.py`.
 
 ## Working with song collections
 
