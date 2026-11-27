@@ -77,8 +77,9 @@ issue and delete the branch.
   them in commits, issues or PRs.
 - **Dependencies:** each new package, or program StrumBook runs (such as `git`), needs
   Sam's OK first: name, version (or minimum), source and why, and whether it's required
-  or optional. Pin a package in `pyproject.toml` and `uv.lock`; list a program in the
-  README's "Programs StrumBook runs" table with when it's needed. Thank either in the
+  or optional. Pin a package in `pyproject.toml` and `uv.lock`; list a program, with any
+  minimum version, in the README's "Programs StrumBook runs" table with when it's
+  needed. Thank either in the
   README's Thanks table, as for anything else we build on (fonts, fixture songs).
 - **Guardrails:** don't change `.claude/`, `.github/workflows/` or `SECURITY.md`
   unless the issue covers it. Don't work around the sandbox; if a command needs a new

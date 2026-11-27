@@ -72,7 +72,7 @@ Besides its own Python packages, StrumBook runs these programs, and only when ne
 
 | Program | When it's needed |
 |---------|------------------|
-| [Git](https://git-scm.com) (optional) | Only to download a StrumBook file's `git` sources, which also need the network. Folder builds and `path` sources don't need it. |
+| [Git](https://git-scm.com) (optional; any recent version) | For a StrumBook file's `git` sources: to download them and check out the right version. Downloading needs the network; later builds can use the copy in the cache. Folder builds and `path` sources don't need it. |
 
 ## How work happens
 

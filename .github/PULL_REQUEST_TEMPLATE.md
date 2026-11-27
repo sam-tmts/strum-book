@@ -15,7 +15,7 @@ What changed, in a few lines.
 
 - [ ] Tests written before the implementation; `make check` passes
 - [ ] No existing test weakened, or the reason is given below
-- [ ] New dependencies approved by Sam and pinned, or none added
+- [ ] New packages or programs approved by Sam, and pinned (packages) or listed in the README (programs), or none added
 - [ ] Architecture, threat model and ADRs updated, or not affected
 - [ ] No secrets, credentials or private songs in the diff
 
