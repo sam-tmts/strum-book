@@ -25,8 +25,9 @@ to draw on (folders, or git repositories it downloads), which songs, and its set
 folder.
 
 Either way, StrumBook writes a PDF for a tablet: a title page, an index, the songs
-sorted by title (or `{sorttitle}`) with chord diagrams down the side, a chord reference
-page and Credits. Choruses are marked, and a small line under each title gives the
+sorted by title (or `{sorttitle}`) with chord diagrams down the side, two Reference
+pages (every root's chord shapes in nine types, then the notes in each chord) and
+Credits. Choruses are marked, and a small line under each title gives the
 song's subtitle and its words, music and translation credits. Every page after the
 title page has a strip of links along the bottom to the index, each letter and the
 reference page. A StrumBook file of type `set-list` makes a gig book instead: a
@@ -50,7 +51,7 @@ Options, which override a StrumBook file's own settings:
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
   drawn inline by default, which splits the word for search. `above` floats it over
   the word instead, so search finds the whole word.
-- `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the reference page,
+- `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the Reference page,
   for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
   `baritone`), in any case. The chord names stay the same; the title page says which.
 - `--slash-chords simplify|as-written`: `simplify` drops a slash chord's bass note

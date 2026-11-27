@@ -11,7 +11,9 @@ from pathlib import Path
 from strumbook.chordpro import Song, SongError, read_song
 from strumbook.chords import shape
 
-REFERENCE_ROOTS = ("C", "D", "E", "F", "G", "A", "Bb", "B")
+# The chord shapes page: a row per root (flats except F#), a column per type.
+CHART_ROOTS = ("C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B")
+CHART_TYPES = ("", "m", "7", "maj7", "m7", "sus2", "sus4", "aug", "dim7")
 MAX_DIAGRAMS = 8  # above this, a song that runs onto a second page loses its diagrams
 
 
@@ -71,11 +73,11 @@ def group_diagrams(chord_names: list[str], tuning: str = "GCEA") -> list[Diagram
     return [Diagram(tuple(names), frets) for frets, names in by_frets.items()]
 
 
-def reference_diagrams(tuning: str) -> list[tuple[str, list[Diagram]]]:
-    """The chord shapes page: each root with its major, minor and 7th diagrams."""
+def chord_chart(tuning: str) -> list[tuple[str, list[tuple[int, ...] | None]]]:
+    """The chord shapes page: each root with the shape of each type in `tuning`."""
     return [
-        (root, group_diagrams([root, root + "m", root + "7"], tuning))
-        for root in REFERENCE_ROOTS
+        (root, [shape(root + kind, tuning) for kind in CHART_TYPES])
+        for root in CHART_ROOTS
     ]
 
 

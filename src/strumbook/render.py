@@ -14,13 +14,13 @@ from strumbook.book import (
     Book,
     BookSong,
     BuildError,
+    chord_chart,
     diagram_columns,
     group_diagrams,
-    reference_diagrams,
     show_diagrams,
     sort_key,
 )
-from strumbook.chords import SLASH_DEFAULTS, TUNING_NAMES, simplify_slash
+from strumbook.chords import SLASH_DEFAULTS, TUNING_NAMES, chord_notes, simplify_slash
 
 LAYOUT = Path(__file__).parent / "layout"
 _OPTIONS = {
@@ -30,6 +30,8 @@ _OPTIONS = {
 }
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
+# The chord shapes page's column headings, for book.CHART_TYPES.
+_CHART_HEADINGS = ("major", "m", "7", "maj7", "m7", "sus2", "sus4", "+", "dim7")
 
 
 def render(
@@ -48,12 +50,7 @@ def render(
     printed = simplify_slash if slash == "simplify" else str
     songs = [_song_data(s, tuning, printed) for s in book.songs]
     sections = _sections(book, songs, settings["set-breaks"])
-    reference = [
-        {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
-        for root, diagrams in reference_diagrams(tuning)
-    ]
     labels = {d["label"] for s in songs for d in s["diagrams"]}
-    labels |= {d["label"] for g in reference for d in g["diagrams"]}
     data = {
         "title": book.title,
         "subtitle": book.subtitle,
@@ -82,7 +79,15 @@ def render(
             for s in sorted(book.songs, key=lambda s: sort_key(s.song))
         ],
         "strip": _strip(book, settings, sections) if settings["navigation"] else [],
-        "reference": reference,
+        # The chart's cells are diagrams only: its row and column name the chord.
+        "chart": {
+            "headings": _CHART_HEADINGS,
+            "rows": [
+                {"root": root.replace("b", "♭").replace("#", "♯"), "shapes": shapes}
+                for root, shapes in chord_chart(tuning)
+            ],
+        },
+        "chord_notes": chord_notes(),
     }
     try:
         data["chords"] = {

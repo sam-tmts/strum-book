@@ -330,26 +330,54 @@
 
 // ---------- reference ----------
 
-#let reference-page() = page(
+// Two pages: the chord shapes in the book's tuning, then the notes in each chord.
+// Both carry the strip with Reference lit; the first is the Reference target.
+#let reference-page(body) = page(
   margin: (x: side, top: 16mm, bottom: bottom-m),
   foreground: page-furniture("ref"),
-)[
-  #heading(level: 1)[Reference] <reference>
+  body,
+)
+#let reference-head(title, sub) = [
   #kicker[REFERENCE] \
-  #text(26pt, weight: "bold")[Chord shapes] \
-  #text(10pt, fill: muted)[#data.tuning.name (#data.tuning.letters)]
-  #v(6mm)
+  #text(26pt, weight: "bold", title) \
+  #text(10pt, fill: muted, sub)
+  #v(4mm)
+]
+
+// A row per root and a column per type. The cells are diagrams only, shrunk to fit
+// all 108 on one page: the row and column name the chord.
+#let chart-page() = reference-page[
+  #heading(level: 1)[Reference] <reference>
+  #heading(level: 2)[Chord shapes]
+  #reference-head([Chord shapes], [#data.tuning.name (#data.tuning.letters)])
   #grid(
-    columns: 2,
-    column-gutter: 10mm,
-    row-gutter: 7mm,
-    ..data.reference.map(g => grid(
-      columns: (10mm, auto, auto, auto),
-      column-gutter: 2mm,
-      align: horizon,
-      text(20pt, weight: "bold", fill: muted, g.root),
-      ..g.diagrams.map(chord-box),
-    ))
+    columns: (12mm,) + (1fr,) * 9,
+    row-gutter: 3mm,
+    align: center + horizon,
+    [], ..data.chart.headings.map(h => text(9pt, weight: "bold", fill: muted, h)),
+    ..data.chart.rows.map(row => (
+      align(left, text(14pt, weight: "bold", fill: muted, row.root)),
+      ..row.shapes.map(frets => if frets != none { scale(85%, reflow: true, diagram(frets)) }),
+    )).flatten(),
+  )
+]
+
+// The same roots and types, with each type's formula: fixed data, as checked.
+#let notes-page() = reference-page[
+  #heading(level: 2)[Notes in each chord]
+  #reference-head([Notes in each chord], [The notes that make each chord, counted from its root, 1])
+  #let notes = data.chord_notes
+  #table(
+    columns: (15mm,) + (1fr,) * 9,
+    inset: (x: 0.8mm, y: 2.2mm),
+    stroke: (bottom: 0.5pt + rule, x: none, top: none),
+    align: left + top,
+    [], ..notes.types.map(t => text(8.5pt, weight: "bold", t.name)),
+    [], ..notes.types.map(t => text(8.5pt, fill: muted, t.formula)),
+    ..notes.rows.map(row => (
+      text(9pt, weight: "bold", fill: muted, row.root),
+      ..row.cells.map(c => [#text(8.5pt, weight: "bold", c.chord) \ #text(8.5pt, c.notes)]),
+    )).flatten(),
   )
 ]
 
@@ -444,6 +472,6 @@
     if set-break != none { break-page(set-break) }
     song-page(song, song.show_diagrams, "")
   }
-  if data.reference_page { reference-page() }
+  if data.reference_page { chart-page(); notes-page() }
   if data.credits { credits-section() }
 }
