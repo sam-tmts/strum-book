@@ -19,6 +19,7 @@ from strumbook.sources import SIGN_IN, fetch
 TYPES = {
     "song-library": {
         "title-page": True,
+        "chords": True,
         "index": True,
         "navigation": True,
         "reference": True,
@@ -31,6 +32,7 @@ TYPES = {
     },
     "set-list": {
         "title-page": True,
+        "chords": False,
         "index": False,
         "navigation": False,
         "reference": False,

@@ -18,7 +18,7 @@ A StrumBook file's `type` says how the book is put together:
 | Type | The songs | What else is in the book |
 |------|-----------|--------------------------|
 | `song-library` (the default) | A to Z by title | A title page, an index, a strip of links along the bottom of each page, two Reference pages (chord shapes, and the notes in each chord) and Credits |
-| `set-list` | In the order they're played, perhaps in sets, with spares at the back | A title page, a running-order page and a break page before each set; the rest only if you turn it on |
+| `set-list` | In the order they're played, perhaps in sets, with spares at the back | A title page, a running-order page and a break page before each set; the rest, chord diagrams included, only if you turn it on |
 
 Some of the books people make with them:
 
@@ -169,6 +169,7 @@ on.
 | Key | Meaning | `song-library` | `set-list` |
 |-----|---------|----------------|------------|
 | `title-page` | The title page | on | on |
+| `chords` | The chord diagrams down the side of each song | on | off |
 | `index` | The A-to-Z index | on | off |
 | `navigation` | The strip of links along the bottom of each page | on | off |
 | `reference` | The Reference pages: chord shapes, and the notes in each chord | on | off |

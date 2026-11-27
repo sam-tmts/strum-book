@@ -39,9 +39,12 @@ Options, which override a StrumBook file's own settings:
   folder's name).
 - `--edition TEXT`: the edition line on the title page (default: today's date).
 - `--type song-library|set-list`: the type of book (default song-library, A to Z). A
-  set list needs a StrumBook file, and leaves out the index, link strip, reference
-  page and Credits unless you turn them on.
+  set list needs a StrumBook file, and leaves out the chord diagrams, index, link
+  strip, Reference pages and Credits unless you turn them on.
 - `--title-page on|off`: include the title page (default on).
+- `--chords on|off`: the chord diagrams down the side of each song (default on; off
+  for a set list). With `off`, the lyrics use the whole page width, the chord names
+  in them stay, and StrumBook doesn't warn about chords it has no diagram for.
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's

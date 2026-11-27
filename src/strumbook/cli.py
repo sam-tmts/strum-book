@@ -49,6 +49,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     for option, what, default in [
         ("title-page", "the title page", "on"),
+        ("chords", "chord diagrams on song pages", "on; set-list off"),
         ("index", "the index", "on; set-list off"),
         ("navigation", "the strip of links along the bottom", "on; set-list off"),
         (
@@ -114,7 +115,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             if (value := getattr(args, key.replace("-", "_"))) is not None
         }
         settings = {**TYPES[recipe.type], **recipe.build, **given}
-        for warning in book.warnings:
+        # A book without diagrams doesn't need to hear which chords have none.
+        shown = [
+            w
+            for w in book.warnings
+            if settings["chords"] or w not in book.missing_diagrams
+        ]
+        for warning in shown:
             print(f"warning: {warning}", file=sys.stderr)
         edition = args.edition or recipe.edition or built
         render(
@@ -128,7 +135,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BuildError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    songs, warnings = len(book.songs), len(book.warnings)
+    songs, warnings = len(book.songs), len(shown)
     print(
         f"Wrote {args.output}: {songs} song{'s' if songs != 1 else ''}, "
         f"{warnings} warning{'s' if warnings != 1 else ''}"

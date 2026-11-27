@@ -99,7 +99,9 @@ def render(
         for song in songs:
             n = len(song["diagrams"])
             with_, without = spans[song["id"], "-with"], spans[song["id"], "-without"]
-            song["show_diagrams"] = show_diagrams(n, with_, without)
+            song["show_diagrams"] = settings["chords"] and show_diagrams(
+                n, with_, without
+            )
         data["index_columns"] = 1 if spans["index", ""] == 1 else 2
         pdf = typst.compile(
             str(LAYOUT / "book.typ"),
