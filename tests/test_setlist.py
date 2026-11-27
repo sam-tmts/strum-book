@@ -1,4 +1,4 @@
-"""Issue #13: the `setlist` style, with sets, set breaks and spares. Built from book
+"""Issue #13: the `set-list` type, with sets, set breaks and spares. Built from StrumBook
 files with local `path` sources, on the fixture carols and synthetic songs."""
 
 import re
@@ -26,7 +26,7 @@ EMMANUEL_T = "O Come, O Come, Emmanuel"
 BETHLEHEM_T = "O Little Town Of Bethlehem"
 SPARES = "Spares and encores"
 CAROLS_T = [AWAY_T, EMMANUEL_T, BETHLEHEM_T]
-SETLIST = 'style = "setlist"'
+SETLIST = 'type = "set-list"'
 
 
 def one_set(name: str, songs: list[str], time: str = "", notes: str = "") -> str:
@@ -67,7 +67,7 @@ def setlist(
     *,
     build: str = "",
     book: str = SETLIST,
-    name: str = "gig.book.toml",
+    name: str = "gig.strumbook.toml",
 ) -> Path:
     return write_book(tmp_path, songs=songs, book=book, build=build, name=name)
 
@@ -332,28 +332,29 @@ def test_command_line_options_override_the_build_table_for_a_setlist(
     assert all(split_links(reader, n)[0] == [] for n in range(len(reader.pages)))
 
 
-def test_style_on_the_command_line_gives_a_listed_book_the_setlist_defaults(
+def test_type_on_the_command_line_gives_a_picked_book_the_setlist_defaults(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"'
+    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]'
     book = write_book(tmp_path, songs=songs)
     plain = built(book, tmp_path / "a.pdf", capsys=capsys)
     assert book_map(plain).titles[1] == "Index"
-    reader = built(book, tmp_path / "b.pdf", "--style", "setlist", capsys=capsys)
+    reader = built(book, tmp_path / "b.pdf", "--type", "set-list", capsys=capsys)
     assert book_map(reader).titles == ["Title", "Running order", AWAY_T, EMMANUEL_T]
 
 
-def test_setlist_style_in_the_book_file_is_accepted_without_warnings(
+def test_set_list_type_in_the_file_is_accepted_without_warnings(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    built(setlist(tmp_path), tmp_path / "gig.pdf", capsys=capsys)
-    assert warning_lines(capsys.readouterr().err) == []
+    code, err = run(setlist(tmp_path), tmp_path / "gig.pdf", capsys=capsys)
+    assert code == 0, err
+    assert warning_lines(err) == []
 
 
-# A songbook with the new options.
+# A song library with the new options.
 
 
-def test_songbook_defaults_have_index_navigation_and_reference_on(
+def test_song_library_defaults_have_index_navigation_and_reference_on(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     reader = built(write_book(tmp_path), tmp_path / "book.pdf", capsys=capsys)
@@ -362,7 +363,7 @@ def test_songbook_defaults_have_index_navigation_and_reference_on(
 
 
 @pytest.mark.parametrize("where", ["build", "command line"])
-def test_a_songbook_can_turn_index_navigation_and_reference_off(
+def test_a_song_library_can_turn_index_navigation_and_reference_off(
     where: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     if where == "build":
@@ -456,12 +457,12 @@ def test_a_single_set_strip_goes_to_running_order_and_the_set(
 def test_a_book_with_no_named_sets_has_no_strip_even_with_navigation_on(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"'
+    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]'
     reader = built(strip_book(tmp_path, songs), tmp_path / "g.pdf", capsys=capsys)
     for n in range(len(reader.pages)):
         assert split_links(reader, n)[0] == [], f"page {n}"
     reader = built(
-        setlist(tmp_path, songs, name="b.book.toml"),
+        setlist(tmp_path, songs, name="b.strumbook.toml"),
         tmp_path / "h.pdf",
         "--navigation",
         "on",
@@ -486,7 +487,7 @@ def test_set_breaks_false_leaves_out_the_break_pages_and_nothing_else(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     full = built(setlist(tmp_path), tmp_path / "full.pdf", capsys=capsys)
-    book = setlist(tmp_path, build="set-breaks = false", name="b.book.toml")
+    book = setlist(tmp_path, build="set-breaks = false", name="b.strumbook.toml")
     plain = built(book, tmp_path / "plain.pdf", capsys=capsys)
     full_map, plain_map = book_map(full), book_map(plain)
     assert plain_map.titles == [
@@ -594,11 +595,11 @@ def test_two_sets_with_no_spares_get_break_pages_by_default(
 def test_a_picked_list_is_one_unnamed_set_with_no_set_break(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"'
+    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]'
     reader = built(setlist(tmp_path, songs), tmp_path / "g.pdf", capsys=capsys)
     assert book_map(reader).titles == ["Title", "Running order", AWAY_T, EMMANUEL_T]
     forced = built(
-        setlist(tmp_path, songs, name="b.book.toml"),
+        setlist(tmp_path, songs, name="b.strumbook.toml"),
         tmp_path / "h.pdf",
         "--set-breaks",
         "on",
@@ -610,9 +611,7 @@ def test_a_picked_list_is_one_unnamed_set_with_no_set_break(
 def test_a_picked_list_with_spares_gets_a_break_page_for_the_spares_only(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = (
-        f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"\nspares = ["{BETHLEHEM}"]'
-    )
+    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]\nspares = ["{BETHLEHEM}"]'
     reader = built(setlist(tmp_path, songs), tmp_path / "g.pdf", capsys=capsys)
     pages = book_map(reader)
     assert pages.titles == [
@@ -720,37 +719,44 @@ def test_exclude_in_a_setlist_is_an_error(
 def test_sets_and_pick_together_are_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = f'pick = ["{AWAY}"]\norder = "listed"\n\n' + one_set("Set 1", [EMMANUEL])
+    songs = f'pick = ["{AWAY}"]\n\n' + one_set("Set 1", [EMMANUEL])
     fails(tmp_path, songs, capsys, "pick")
 
 
-def test_a_to_z_order_in_a_setlist_is_an_error(
+def test_order_is_just_an_unknown_key_in_a_set_list(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    fails(tmp_path, f'pick = ["{AWAY}"]\norder = "a-z"', capsys, "a-z")
+    songs = f'pick = ["{EMMANUEL}", "{AWAY}"]\norder = "a-z"'
+    out = tmp_path / "g.pdf"
+    code, err = run(setlist(tmp_path, songs), out, capsys=capsys)
+    assert code == 0, err
+    warnings = warning_lines(err)
+    assert len(warnings) == 1 and "order" in warnings[0]
+    reader = PdfReader(out)
+    assert book_map(reader).titles == ["Title", "Running order", EMMANUEL_T, AWAY_T]
 
 
-def test_sets_in_a_songbook_are_an_error(
+def test_sets_in_a_song_library_are_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     songs = 'include = "all"\n\n' + one_set("Set 1", [AWAY])
-    fails(tmp_path, songs, capsys, "set", book='style = "songbook"')
+    fails(tmp_path, songs, capsys, "set", book='type = "song-library"')
 
 
-def test_spares_in_a_songbook_are_an_error(
+def test_spares_in_a_song_library_are_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     songs = f'include = "all"\nspares = ["{AWAY}"]'
-    fails(tmp_path, songs, capsys, "spares", book='style = "songbook"')
+    fails(tmp_path, songs, capsys, "spares", book='type = "song-library"')
     fails(tmp_path, songs, capsys, "spares", book="")
 
 
-def test_the_setlist_style_on_a_folder_build_is_an_error(
+def test_the_set_list_type_on_a_folder_build_is_an_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     out = tmp_path / "folder.pdf"
-    code, err = run(FIXTURES, out, "--style", "setlist", capsys=capsys)
-    assert_clean_error(code, err, out, "setlist")
+    code, err = run(FIXTURES, out, "--type", "set-list", capsys=capsys)
+    assert_clean_error(code, err, out, "set-list")
 
 
 def test_a_failed_setlist_build_leaves_an_existing_pdf_alone(
@@ -765,18 +771,18 @@ def test_a_failed_setlist_build_leaves_an_existing_pdf_alone(
     assert out.read_bytes() == b"earlier build"
 
 
-# Partial songbook strips.
+# Partial song library strips.
 
 
 def strip_of_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> list[int]:
     reader = built(
-        write_book(tmp_path, name="d.book.toml"), tmp_path / "d.pdf", capsys=capsys
+        write_book(tmp_path, name="d.strumbook.toml"), tmp_path / "d.pdf", capsys=capsys
     )
     return strip_targets(reader, 1)
 
 
 @pytest.mark.parametrize("where", ["build", "command line"])
-def test_a_songbook_without_an_index_has_a_strip_without_its_cell(
+def test_a_song_library_without_an_index_has_a_strip_without_its_cell(
     where: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     default = strip_of_default(tmp_path, capsys)
@@ -802,7 +808,7 @@ def test_a_songbook_without_an_index_has_a_strip_without_its_cell(
             assert others <= credits, f"{title} page {n}"
 
 
-def test_a_songbook_without_reference_ends_its_strip_on_the_last_song(
+def test_a_song_library_without_reference_ends_its_strip_on_the_last_song(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     default = strip_of_default(tmp_path, capsys)
@@ -821,7 +827,7 @@ def test_a_songbook_without_reference_ends_its_strip_on_the_last_song(
         assert targets[16:] == [last] * 11  # P to Z
 
 
-def test_a_songbook_without_index_or_reference_has_just_a_to_z(
+def test_a_song_library_without_index_or_reference_has_just_a_to_z(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     default = strip_of_default(tmp_path, capsys)
@@ -843,9 +849,7 @@ def test_a_songbook_without_index_or_reference_has_just_a_to_z(
 def test_a_picked_list_with_spares_has_a_two_cell_strip(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    songs = (
-        f'pick = ["{AWAY}", "{EMMANUEL}"]\norder = "listed"\nspares = ["{BETHLEHEM}"]'
-    )
+    songs = f'pick = ["{AWAY}", "{EMMANUEL}"]\nspares = ["{BETHLEHEM}"]'
     book = setlist(tmp_path, songs, build="navigation = true")
     reader = built(book, tmp_path / "g.pdf", capsys=capsys)
     pages = book_map(reader)
@@ -876,15 +880,9 @@ def test_a_bad_value_for_a_new_build_key_is_an_error_naming_the_key(
     assert_clean_error(code, err, out, line.split(" ")[0])
 
 
-def test_songbook_on_the_command_line_rejects_a_book_with_sets(
+def test_song_library_on_the_command_line_rejects_a_book_with_sets(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     out = tmp_path / "gig.pdf"
-    code, err = run(setlist(tmp_path), out, "--style", "songbook", capsys=capsys)
-    assert_clean_error(code, err, out, "set", "songbook")
-
-
-def test_a_mistyped_order_in_a_setlist_names_the_key_and_the_valid_value(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    fails(tmp_path, f'pick = ["{AWAY}"]\norder = "listd"', capsys, "order", "listed")
+    code, err = run(setlist(tmp_path), out, "--type", "song-library", capsys=capsys)
+    assert_clean_error(code, err, out, "set", "song")
