@@ -89,11 +89,11 @@ def test_chords_off_leaves_no_diagrams_on_any_song_page(
     pages = _song_pages(reader, ["Apple", "Mango"])
     assert pages
     assert not _has_column(reader, ["Apple", "Mango"])
-    assert not _dots(reader, pages_range(pages))
+    assert not _dots(reader, _pages_range(pages))
     assert len(book_map(reader).pages_of("Apple")) == 1
 
 
-def pages_range(pages: list[int]) -> range:
+def _pages_range(pages: list[int]) -> range:
     assert pages == list(range(pages[0], pages[-1] + 1))
     return range(pages[0], pages[-1] + 1)
 
@@ -199,7 +199,7 @@ def test_chords_false_in_build_turns_diagrams_off(
     assert code == 0, err
     reader = PdfReader(out)
     assert not _has_column(reader, ["Apple", "Mango"])
-    assert not _dots(reader, pages_range(_song_pages(reader, ["Apple", "Mango"])))
+    assert not _dots(reader, _pages_range(_song_pages(reader, ["Apple", "Mango"])))
     assert "no diagram" not in err
 
 
@@ -249,7 +249,7 @@ def test_a_set_list_has_no_diagrams_by_default(
     pages = _song_pages(reader, ["Away In A Manger", "O Little Town Of Bethlehem"])
     assert pages
     assert not _has_column(reader, ["Away In A Manger", "O Little Town Of Bethlehem"])
-    assert not _dots(reader, pages_range(pages))
+    assert not _dots(reader, _pages_range(pages))
 
 
 @pytest.mark.parametrize("where", ["build", "command line"])
@@ -326,3 +326,43 @@ def test_reference_off_and_chords_on_are_independent(
     )
     assert "Reference" not in book_map(reader).titles
     assert _has_column(reader, ["Apple", "Mango"])
+
+
+# The set-list default suppresses warnings too.
+
+
+def _setlist_with_unknown_chord(tmp_path: Path, build: str = "") -> Path:
+    songs = write_songs(tmp_path / "synth", {"odd": "{title:Odd}\n[Zq9]la [G]la\n"})
+    return write_book(
+        tmp_path,
+        sources=f"[sources.s]\npath = '{songs}'\n",
+        songs='[[songs.set]]\nname = "Set 1"\nsongs = ["s:odd"]\n',
+        book='type = "set-list"',
+        build=build,
+    )
+
+
+def test_a_set_list_by_default_prints_no_diagram_warnings_and_counts_none(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    book = _setlist_with_unknown_chord(tmp_path)
+    code = main(["build", str(book), "-o", str(tmp_path / "g.pdf")])
+    captured = capsys.readouterr()
+    assert code == 0, captured.err
+    assert "no diagram" not in captured.err
+    assert "0 warnings" in captured.out
+
+
+@pytest.mark.parametrize("where", ["build", "command line"])
+def test_a_set_list_with_diagrams_on_warns_about_a_missing_diagram(
+    where: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if where == "build":
+        book, flags = _setlist_with_unknown_chord(tmp_path, "chords = true"), []
+    else:
+        book, flags = _setlist_with_unknown_chord(tmp_path), ["--chords", "on"]
+    code = main(["build", str(book), "-o", str(tmp_path / "g.pdf"), *flags])
+    captured = capsys.readouterr()
+    assert code == 0, captured.err
+    assert "Odd: no diagram for Zq9" in captured.err
+    assert "1 warning\n" in captured.out

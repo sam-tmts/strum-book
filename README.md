@@ -43,8 +43,8 @@ Options, which override a StrumBook file's own settings:
   strip, Reference pages and Credits unless you turn them on.
 - `--title-page on|off`: include the title page (default on).
 - `--chords on|off`: the chord diagrams down the side of each song (default on; off
-  for a set list). With `off`, the lyrics use the whole page width, the chord names
-  in them stay, and StrumBook doesn't warn about chords it has no diagram for.
+  for a set list). With `off`, the lyrics use the whole page width and the chord
+  names in them stay.
 - `--index on|off`, `--navigation on|off` (the link strip) and `--reference on|off`:
   include each (default on).
 - `--set-breaks on|off`: a page before each set in a set list (default on when there's
@@ -66,8 +66,8 @@ Options, which override a StrumBook file's own settings:
 
 To avoid page turns, a song drops its diagram column if the diagrams would push it onto
 a second page, or if it has more than 8 diagrams and needs more than one page anyway.
-The chord names in the lyrics always stay. StrumBook warns about chords it has no
-diagram for and ChordPro directives it doesn't know. Chords are played as written:
+The chord names in the lyrics always stay. StrumBook warns about ChordPro directives
+it doesn't know and, when the book has diagrams, about chords it has no diagram for. Chords are played as written:
 `{capo}` is ignored.
 
 To see a full book, `make christmas` builds all 28 carols from

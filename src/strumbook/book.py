@@ -60,8 +60,8 @@ class Book:
     notes: str = ""  # plain text; paragraphs separated by blank lines
     sources: tuple[tuple[str, str], ...] = ()  # for Credits: (name, link or "")
     sections: tuple[Section, ...] = ()  # a set list's sets and spares, in order
-    # The "no diagram for X" warnings among `warnings`, which matter only in a book
-    # with diagrams.
+    # The "no diagram for X" warnings: a subset of `warnings`, which matter only in a
+    # book with diagrams.
     missing_diagrams: tuple[str, ...] = ()
 
 

@@ -228,7 +228,8 @@ setting has a value StrumBook doesn't accept, or a `[songs]` key belongs to the 
 type (`include` or `exclude` in a set list; sets or `spares` in a song library; sets
 and `pick` together). `--type set-list` needs a StrumBook file. Keys it doesn't know
 only get a warning, so a StrumBook file written for a newer StrumBook still builds.
-Unknown chords and directives in a song are warnings, as when building from a folder.
+Unknown directives in a song are warnings, as when building from a folder; so are
+chords StrumBook has no diagram for, when `chords` is on.
 
 If the file isn't valid TOML, the error says which line. For the usual slips, it shows
 how to write the line: a ChordPro line such as `{title: Carols}`, `title: Carols` or
