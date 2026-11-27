@@ -56,7 +56,8 @@ Options, which override a StrumBook file's own settings:
   the word instead, so search finds the whole word.
 - `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the Reference page,
   for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
-  `baritone`), in any case. The chord names stay the same; the title page says which.
+  `baritone`), in any case. The chord names stay the same. The title page says which
+  tuning, when the book has diagrams or Reference pages.
 - `--slash-chords simplify|as-written`: `simplify` drops a slash chord's bass note
   when it's already in the chord, so `Am/C` prints as `Am`, but `C/B` stays. The
   default is `simplify` for GCEA, which has no real bass string, and `as-written` for

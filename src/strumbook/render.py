@@ -60,7 +60,7 @@ def render(
         "sources": [{"name": name, "link": link} for name, link in book.sources],
         "type": kind,
         "title_page": settings["title-page"],
-        "diagrams": settings["chords"],
+        "chord_diagrams": settings["chords"],
         "index_page": settings["index"],
         "reference_page": settings["reference"],
         "credits": settings["credits"],
