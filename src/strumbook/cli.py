@@ -10,6 +10,7 @@ from pathlib import Path
 
 from strumbook.book import BuildError, read_book
 from strumbook.bookfile import CHOICES, TYPES, BookFile, read_book_file
+from strumbook.chords import tuning
 
 _ON_OFF = {"on": True, "off": False}
 
@@ -62,6 +63,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=CHOICES["mid-word-chords"],
         help="draw a chord inside a word inline (default), or above the word so "
         "search finds the whole word",
+    )
+    build.add_argument(
+        "--tuning",
+        type=lambda value: tuning(value) or value,
+        choices=CHOICES["tuning"],
+        help="the chord shapes: GCEA or ukulele (the default), or DGBE or baritone, "
+        "in any case",
+    )
+    build.add_argument(
+        "--slash-chords",
+        choices=CHOICES["slash-chords"],
+        help="simplify (Am/C prints as Am when the bass is already in the chord) or "
+        "as-written (default: simplify for GCEA, as-written for DGBE)",
     )
     build.add_argument(
         "--pdf-tags",

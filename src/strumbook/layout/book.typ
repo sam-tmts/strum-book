@@ -115,7 +115,7 @@
 
 #let diagram-column(song, cols) = stack(
   spacing: 3mm,
-  align(center, text(7.5pt, fill: muted, tracking: 0.12em, data.tuning)),
+  align(center, text(7.5pt, fill: muted, tracking: 0.12em, data.tuning.letters)),
   grid(columns: cols, column-gutter: 2mm, row-gutter: 4.5mm, ..song.diagrams.map(chord-box)),
 )
 
@@ -276,7 +276,7 @@
     if data.reference_page or data.credits { group-head[Reference] }
     if data.reference_page {
       index-row(
-        [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning)],
+        [Chord shapes #h(1.5mm) #text(10pt, fill: muted, data.tuning.letters)],
         index-number(<reference>),
         <reference>,
       )
@@ -337,7 +337,7 @@
   #heading(level: 1)[Reference] <reference>
   #kicker[REFERENCE] \
   #text(26pt, weight: "bold")[Chord shapes] \
-  #text(10pt, fill: muted)[Standard tuning #data.tuning]
+  #text(10pt, fill: muted)[#data.tuning.name (#data.tuning.letters)]
   #v(6mm)
   #grid(
     columns: 2,
@@ -360,7 +360,8 @@
   #kicker(if data.type == "set-list" [SET LIST] else [SONGBOOK]) \
   #text(40pt, weight: "bold", data.title) \
   #if data.subtitle != "" { text(18pt, data.subtitle); linebreak() }
-  #text(14pt, fill: muted, data.edition)
+  #text(14pt, fill: muted, data.edition) \
+  #text(10pt, fill: muted)[Chord shapes: #data.tuning.name ukulele (#data.tuning.letters)]
   #notes-block(data.notes)
   #place(bottom + left, text(10pt, fill: muted)[Made with StrumBook])
 ]

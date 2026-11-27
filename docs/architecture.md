@@ -52,13 +52,16 @@ flowchart LR
   (`{text}`, `{translated}`, `{Latin Text}` …). Metadata we don't show (key, capo …)
   and known oddities are ignored; other directives are skipped with a warning.
 - **Book model** (`book.py`) sorts the songs by sort title, ignoring case (a set list
-  keeps its running order and records its sets and spares as `Section`s over it), and
-  groups each song's chords into diagrams: chords with the same fingering share one.
-  Shapes come from our own GCEA table (`chords.json`, read by `chords.py`). It also
-  holds the two rules for dropping a song's diagram column (`show_diagrams`). It knows
-  nothing about pages.
-- **Page renderer** (`render.py`) is the only code that knows about Typst. It passes
-  the book to `layout/book.typ` as JSON data, never as Typst markup, in three offline
+  keeps its running order and records its sets and spares as `Section`s over it). It
+  groups chords into diagrams in a tuning (`group_diagrams`): chords with the same
+  fingering share one. Shapes come from our own table for each tuning
+  (`chords-gcea.json`, `chords-dgbe.json`, read by `chords.py`, which also simplifies
+  slash chords). It also holds the two rules for dropping a song's diagram column
+  (`show_diagrams`). It knows nothing about pages.
+- **Page renderer** (`render.py`) is the only code that knows about Typst. It prints
+  each chord name as the `slash-chords` setting says, asks the book model for the
+  diagrams in the book's tuning, and passes the book to `layout/book.typ` as JSON
+  data, never as Typst markup, in three offline
   passes: outline the chord names to SVG (`layout/chord-names.typ`) so they stay out
   of the searchable text, measure each song with and without diagrams and apply the
   rules, then compile the book: title page, index, songs, reference page and Credits,
@@ -73,7 +76,6 @@ flowchart LR
 
 ## Planned
 
-To be built issue by issue: the RHS layout and build options, baritone (DGBE)
-diagrams, and a separate **importer** that drafts ChordPro from PDFs or pasted
-chords-over-lyrics text, for a person to check. Add modules when an issue needs them,
-not before.
+To be built issue by issue: the RHS layout and build options, and a separate
+**importer** that drafts ChordPro from PDFs or pasted chords-over-lyrics text, for a
+person to check. Add modules when an issue needs them, not before.

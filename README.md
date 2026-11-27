@@ -5,7 +5,8 @@ songs: tablet-friendly PDFs with a tappable index, searchable text and chord dia
 for each instrument. The [problem statement](docs/problem-statement.md) explains why.
 
 **Status: early development.** It builds a song library or a gig set list from a
-StrumBook file, or a song library from one folder of songs, with GCEA chord diagrams.
+StrumBook file, or a song library from one folder of songs, with chord diagrams for
+standard (GCEA) or baritone (DGBE) ukulele.
 
 ## Try it
 
@@ -49,6 +50,13 @@ Options, which override a StrumBook file's own settings:
 - `--mid-word-chords inline|above`: a chord inside a word, such as `a[D]wakes`, is
   drawn inline by default, which splits the word for search. `above` floats it over
   the word instead, so search finds the whole word.
+- `--tuning GCEA|DGBE`: the chord shapes in the diagrams and on the reference page,
+  for a standard ukulele (`GCEA`, or `ukulele`; the default) or a baritone (`DGBE`, or
+  `baritone`), in any case. The chord names stay the same; the title page says which.
+- `--slash-chords simplify|as-written`: `simplify` drops a slash chord's bass note
+  when it's already in the chord, so `Am/C` prints as `Am`, but `C/B` stays. The
+  default is `simplify` for GCEA, which has no real bass string, and `as-written` for
+  DGBE. The song files are never changed.
 - `--pdf-tags on|off`: tags help screen readers but make the PDF about twice the
   size (about 30 MB for 500 songs); `off` gives a smaller file.
 

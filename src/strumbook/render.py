@@ -15,9 +15,12 @@ from strumbook.book import (
     BookSong,
     BuildError,
     diagram_columns,
+    group_diagrams,
+    reference_diagrams,
     show_diagrams,
     sort_key,
 )
+from strumbook.chords import simplify_slash
 
 LAYOUT = Path(__file__).parent / "layout"
 _OPTIONS = {
@@ -27,6 +30,7 @@ _OPTIONS = {
 }
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SVG_SIZE = re.compile(rb'width="([\d.]+)pt" height="([\d.]+)pt"')
+_TUNING_NAMES = {"GCEA": "Standard", "DGBE": "Baritone"}
 
 
 def render(
@@ -40,11 +44,16 @@ def render(
 ) -> None:
     """Write `book` as a PDF of type `kind` ("song-library" or "set-list"), with the
     build `settings` (see bookfile.TYPES). `built` is the build date, for the About page."""
-    songs = [_song_data(s) for s in book.songs]
+    tuning = settings["tuning"]
+    # Slash chords are simplified by default only on a re-entrant ukulele, which has
+    # no real bass string.
+    slash = settings["slash-chords"] or ("simplify" if tuning == "GCEA" else "")
+    printed = simplify_slash if slash == "simplify" else str
+    songs = [_song_data(s, tuning, printed) for s in book.songs]
     sections = _sections(book, songs, settings["set-breaks"])
     reference = [
         {"root": root, "diagrams": [_diagram_data(d) for d in diagrams]}
-        for root, diagrams in book.reference
+        for root, diagrams in reference_diagrams(tuning)
     ]
     labels = {d["label"] for s in songs for d in s["diagrams"]}
     labels |= {d["label"] for g in reference for d in g["diagrams"]}
@@ -61,7 +70,7 @@ def render(
         "index_page": settings["index"],
         "reference_page": settings["reference"],
         "credits": settings["credits"],
-        "tuning": "GCEA",
+        "tuning": {"letters": tuning, "name": _TUNING_NAMES[tuning]},
         "mid_word": settings["mid-word-chords"],
         "sections": sections,
         "songs": songs,
@@ -80,7 +89,9 @@ def render(
     }
     try:
         data["chords"] = {
-            "inline": _outline(sorted({c for s in book.songs for c in s.song.chords})),
+            "inline": _outline(
+                sorted({printed(c) for s in book.songs for c in s.song.chords})
+            ),
             "label": _outline(sorted(labels), style="label"),
         }
         spans = _measure(data)
@@ -108,8 +119,11 @@ def _diagram_data(diagram) -> dict:
     return {"label": diagram.label, "frets": diagram.frets}
 
 
-def _song_data(book_song: BookSong) -> dict:
+def _song_data(book_song: BookSong, tuning: str, printed) -> dict:
+    """A song for the layout, with its chord names as printed (`printed` maps each
+    name) and its diagrams in `tuning`."""
     song = book_song.song
+    diagrams = group_diagrams([printed(c) for c in song.chords], tuning)
     blocks = []
     for block in song.blocks:
         lines = []
@@ -121,7 +135,8 @@ def _song_data(book_song: BookSong) -> dict:
                 mid = (
                     bool(before) and not before[-1].isspace() and seg.text[:1].isalpha()
                 )
-                segments.append({"chord": seg.chord, "text": seg.text, "mid": mid})
+                chord = printed(seg.chord)
+                segments.append({"chord": chord, "text": seg.text, "mid": mid})
             lines.append(segments)
         blocks.append({"chorus": block.chorus, "lines": lines})
     return {
@@ -131,8 +146,8 @@ def _song_data(book_song: BookSong) -> dict:
         "credit": song.credit_line,
         "key": book_song.letter,  # the strip cell this song lights up
         "blocks": blocks,
-        "diagrams": [_diagram_data(d) for d in book_song.diagrams],
-        "diagram_columns": diagram_columns(len(book_song.diagrams)),
+        "diagrams": [_diagram_data(d) for d in diagrams],
+        "diagram_columns": diagram_columns(len(diagrams)),
     }
 
 
